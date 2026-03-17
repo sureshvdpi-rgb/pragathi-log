@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Pragathi Log</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: #0f0f0f; 
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 40px;
+        }
+
+        /* HEADER */
+        .container { text-align: center; margin-bottom: 25px; margin-top: 20px; }
+        h1 { 
+            font-size: 2.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px;
+            background: linear-gradient(to bottom, #fff, #888);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            line-height: 1; cursor: pointer;
+        }
+        .age-line { font-size: 0.8rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; cursor: pointer; }
+        .divider { width: 40px; height: 4px; background-color: #fff; margin: 10px auto; border-radius: 10px; opacity: 0.8; }
+
+        /* GRID SYSTEM */
+        .grid-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr; 
+            gap: 12px;
+            width: 100%;
+            max-width: 420px;
+        }
+
+        /* TOP WIDE STATUS TILE */
+        .wide-tile {
+            grid-column: span 2;
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 28px;
+            padding: 22px 10px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr; 
+            text-decoration: none;
+            margin-bottom: 5px;
+        }
+
+        .status-item { text-align: center; border-right: 1px solid rgba(255,255,255,0.08); }
+        .status-item:last-child { border-right: none; }
+        
+        .status-label { font-size: 0.55rem; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; letter-spacing: 1px; }
+        .status-val { font-size: 1.1rem; font-weight: 900; color: #00ffaa; } 
+        
+        .low-stock { color: #ffcc00; }
+        .expired-text { color: #ff4d4d; animation: blink 1.5s infinite; font-size: 0.9rem; }
+
+        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
+
+        /* MENU TILES */
+        .menu-box {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255,255,255,0.05);
+            padding: 25px 10px;
+            border-radius: 28px;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 160px;
+            text-decoration: none;
+            transition: all 0.2s ease;
+        }
+        .menu-box:active, .wide-tile:active { transform: scale(0.96); opacity: 0.8; }
+
+        .icon-circle {
+            width: 45px; height: 45px; background: rgba(255,255,255,0.03);
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            margin-bottom: 12px; font-size: 1.3rem;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .menu-box h3 { font-size: 0.6rem; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
+        .menu-box .label { font-size: 1rem; font-weight: 800; color: #fff; }
+
+        #birthdate-picker { display: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1 id="user-name" onclick="editName()">ALEX</h1>
+        <div id="age-display" class="age-line" onclick="triggerAgePicker()">Set Age</div>
+        <input type="date" id="birthdate-picker" onchange="updateAge(this.value)">
+        <div class="divider"></div>
+    </div>
+
+    <div class="grid-wrapper">
+        <a href="./supply.html" class="wide-tile">
+            <div class="status-item">
+                <div class="status-label">Needles</div>
+                <div class="status-val" id="sync-needle-status">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Rapid C.</div>
+                <div class="status-val" id="sync-rc-stock">0</div>
+            </div>
+            <div class="status-item">
+                <div class="status-label">Basal C.</div>
+                <div class="status-val" id="sync-bc-stock">0</div>
+            </div>
+        </a>
+
+        <a href="./log.html" class="menu-box">
+            <div class="icon-circle">💉</div>
+            <h3>Track</h3>
+            <div class="label">Logs</div>
+        </a>
+
+        <a href="./supply.html" class="menu-box">
+            <div class="icon-circle">📦</div>
+            <h3>Manage</h3>
+            <div class="label">Supply</div>
+        </a>
+
+        <a href="#" class="menu-box" onclick="alert('Analysis feature coming soon!')">
+            <div class="icon-circle">📈</div>
+            <h3>Analyze</h3>
+            <div class="label">Trends</div>
+        </a>
+
+        <a href="#" class="menu-box" onclick="alert('Settings feature coming soon!')">
+            <div class="icon-circle">⚙️</div>
+            <h3>System</h3>
+            <div class="label">Settings</div>
+        </a>
+    </div>
+
+    <script>
+        function syncSupplyData() {
+            const now = new Date().getTime();
+            
+            const needleStock = localStorage.getItem('needle_common_stock') || 0;
+            const rnExpiry = localStorage.getItem('rn_expiry');
+            const bnExpiry = localStorage.getItem('bn_expiry');
+            const needleDisplay = document.getElementById('sync-needle-status');
+
+            const rnExp = rnExpiry && (rnExpiry - now <= 0);
+            const bnExp = bnExpiry && (bnExpiry - now <= 0);
+
+            if (rnExp && bnExp) {
+                needleDisplay.innerText = "EXP: BOTH";
+                needleDisplay.className = "status-val expired-text";
+            } else if (rnExp) {
+                needleDisplay.innerText = "EXP: RAPID";
+                needleDisplay.className = "status-val expired-text";
+            } else if (bnExp) {
+                needleDisplay.innerText = "EXP: BASAL";
+                needleDisplay.className = "status-val expired-text";
+            } else {
+                needleDisplay.innerText = needleStock;
+                needleDisplay.className = "status-val " + (parseInt(needleStock) <= 5 ? 'low-stock' : '');
+            }
+
+            updateStockDisplay('sync-rc-stock', localStorage.getItem('rc_stock') || 0, 3);
+            updateStockDisplay('sync-bc-stock', localStorage.getItem('bc_stock') || 0, 3);
+        }
+
+        function updateStockDisplay(id, val, lowLimit) {
+            const el = document.getElementById(id);
+            if(!el) return;
+            el.innerText = val;
+            el.className = "status-val " + (parseInt(val) <= lowLimit ? 'low-stock' : '');
+        }
+
+        function editName() {
+            let n = prompt("Enter your name:", localStorage.getItem('profile_name') || "ALEX");
+            if(n) { localStorage.setItem('profile_name', n); render(); }
+        }
+
+        function triggerAgePicker() { document.getElementById('birthdate-picker').showPicker(); }
+        
+        function updateAge(date) { localStorage.setItem('profile_dob', date); render(); }
+
+        function render() {
+            document.getElementById('user-name').innerText = localStorage.getItem('profile_name') || "ALEX";
+            const dob = localStorage.getItem('profile_dob');
+            if(dob) {
+                const bday = new Date(dob);
+                const now = new Date();
+                let y = now.getFullYear() - bday.getFullYear();
+                let m = now.getMonth() - bday.getMonth();
+                if (m < 0 || (m === 0 && now.getDate() < bday.getDate())) { y--; m += 12; }
+                document.getElementById('age-display').innerText = `${y} Years, ${m} Months`;
+            }
+            syncSupplyData();
+        }
+
+        render();
+        window.addEventListener('storage', render);
+        setInterval(syncSupplyData, 30000); 
+    </script>
+</body>
+</html>

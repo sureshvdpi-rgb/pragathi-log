@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Activity Log</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            background-color: #0f0f0f; 
+            color: #ffffff;
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+            padding-bottom: 120px;
+        }
+
+        /* HEADER */
+        .container { text-align: center; margin-bottom: 20px; margin-top: 10px; width: 100%; }
+        h1 { 
+            font-size: 2.8rem; 
+            font-weight: 900; 
+            text-transform: uppercase; 
+            letter-spacing: -2px;
+            background: linear-gradient(to bottom, #fff, #888);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .divider { width: 40px; height: 4px; background-color: #fff; margin: 5px auto; border-radius: 10px; opacity: 0.8; }
+
+        /* QUICK ENTRY FORM TILE */
+        .entry-card {
+            width: 100%; max-width: 420px;
+            background: #1a1a1a; border-radius: 30px; padding: 20px;
+            margin-bottom: 20px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .entry-card h2 { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 2px; color: #555; margin-bottom: 15px; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; font-size: 0.6rem; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 6px; }
+        input, select { width: 100%; background: #252525; border: 1px solid #333; border-radius: 15px; padding: 12px; color: white; font-size: 1rem; font-weight: 600; outline: none; }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+        .save-btn { width: 100%; background: #fff; color: #000; padding: 15px; border-radius: 100px; border: none; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
+        .save-btn:active { transform: scale(0.96); }
+
+        /* BASAL TIMER TILE */
+        .basal-timer-tile {
+            width: 100%; max-width: 420px;
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 28px; padding: 25px; text-align: center; margin-bottom: 25px;
+            transition: all 0.4s ease; position: relative;
+        }
+        .basal-timer-tile.due { background: linear-gradient(145deg, #ffcc00, #d4aa00); border-color: #ffcc00; }
+        .basal-timer-tile.due .timer-label, .basal-timer-tile.due .date-label, .basal-timer-tile.due .display-time { color: #000; }
+
+        .date-container { margin-bottom: 5px; cursor: pointer; display: inline-block; position: relative; }
+        .date-label { font-size: 0.75rem; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; color: #888; text-decoration: underline; text-underline-offset: 4px; }
+        .hidden-date-input { position: absolute; opacity: 0; width: 100%; height: 100%; left: 0; top: 0; cursor: pointer; }
+
+        .basal-display-row { display: flex; justify-content: center; align-items: center; gap: 12px; margin: 5px 0; }
+        .display-time { font-size: 2.4rem; font-weight: 900; letter-spacing: -1px; }
+        .clock-wrapper { width: 35px; height: 35px; background: rgba(255,255,255,0.05); border-radius: 50%; display: flex; align-items: center; justify-content: center; cursor: pointer; position: relative; }
+        .hidden-time-input { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
+        .timer-label { font-size: 0.65rem; text-transform: uppercase; letter-spacing: 2px; color: #555; font-weight: 800; margin-top: 5px; }
+        
+        .confirm-btn {
+            margin-top: 20px; width: 100%; padding: 15px; border-radius: 20px;
+            border: none; font-weight: 900; text-transform: uppercase; letter-spacing: 1px;
+            font-size: 0.75rem; transition: 0.3s;
+        }
+        .btn-active { background: #fff; color: #000; cursor: pointer; }
+        .btn-disabled { background: rgba(255,255,255,0.05); color: #444; cursor: default; }
+
+        /* DATA MANAGEMENT BUTTONS */
+        .data-controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            width: 100%;
+            max-width: 420px;
+            margin-bottom: 20px;
+        }
+        .data-btn {
+            background: #1a1a1a;
+            border: 1px solid #333;
+            color: #888;
+            padding: 12px 5px;
+            border-radius: 15px;
+            font-size: 0.6rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .data-btn:active { background: #333; color: #fff; }
+        .btn-danger-text { color: #ff4d4d; border-color: rgba(255,77,77,0.2); }
+
+        /* LOG LIST STYLES */
+        .log-wrapper { width: 100%; max-width: 420px; }
+        .date-group { margin-bottom: 10px; width: 100%; }
+        .date-header {
+            display: flex; justify-content: space-between; align-items: center; padding: 12px 20px;
+            background: rgba(255,255,255,0.03); border-radius: 15px; margin-bottom: 8px;
+            cursor: pointer; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; color: #666;
+        }
+        .date-header span { color: #fff; }
+        .date-group.collapsed .entries-container { display: none; }
+        .log-item { background: linear-gradient(145deg, #2a2a2a, #1e1e1e); border: 1px solid rgba(255,255,255,0.05); border-radius: 24px; padding: 18px; display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; cursor: pointer; }
+        .icon-circle { width: 38px; height: 38px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+        .log-details h3 { font-size: 0.6rem; color: #888; text-transform: uppercase; }
+        .log-details .value { font-size: 1.1rem; font-weight: 800; }
+
+        /* BOTTOM NAV */
+        .back-nav { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 1000; }
+        .back-btn { background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #fff; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; padding: 16px 40px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; }
+
+        /* MODAL */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); backdrop-filter: blur(10px); display: flex; align-items: flex-end; visibility: hidden; opacity: 0; transition: 0.3s; z-index: 100; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        .modal-content { background: #1a1a1a; width: 100%; border-radius: 40px 40px 0 0; padding: 30px 25px 50px 25px; transform: translateY(100%); transition: 0.4s; }
+        .modal-overlay.active .modal-content { transform: translateY(0); }
+        .action-btn { width: 100%; padding: 18px; border-radius: 20px; border: none; font-weight: 800; text-transform: uppercase; margin-bottom: 10px; font-size: 0.8rem; cursor: pointer; }
+        .btn-edit { background: #333; color: #fff; }
+        .btn-delete { background: #ff4d4d; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>LOGS</h1>
+        <div class="divider"></div>
+    </div>
+
+    <div class="entry-card">
+        <h2 id="form-title">Quick Entry</h2>
+        <input type="hidden" id="edit-id">
+        <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="log-datetime"></div>
+        <div class="form-row">
+            <div class="form-group"><label>Glucose</label><input type="number" id="log-glucose" placeholder="---"></div>
+            <div class="form-group"><label>Insulin</label><input type="number" id="log-insulin" placeholder="0.0" step="0.5"></div>
+        </div>
+        <div class="form-group">
+            <label>Category</label>
+            <select id="log-category">
+                <option value="General">General</option>
+                <option value="Breakfast">Breakfast</option>
+                <option value="Lunch">Lunch</option>
+                <option value="Snacks">Snacks</option>
+                <option value="Dinner">Dinner</option>
+            </select>
+        </div>
+        <button class="save-btn" id="save-button" onclick="saveEntry()">Save Entry</button>
+        <button id="cancel-edit-btn" style="display:none; background:transparent; color:#666; width:100%; margin-top:10px; border:none; text-transform:uppercase; font-size:0.6rem; font-weight:800;" onclick="resetForm()">Cancel Edit</button>
+    </div>
+
+    <div class="basal-timer-tile" id="basal-tile">
+        <div class="date-container" onclick="triggerDatePicker()">
+            <span id="date-label-text" class="date-label">TODAY DOSE</span>
+            <input type="date" id="basal-date" class="hidden-date-input" onchange="updateBasalDisplay()">
+        </div>
+        <div class="basal-display-row">
+            <div id="time-display" class="display-time">--:--</div>
+            <div class="clock-wrapper">
+                <span class="clock-icon">🕒</span>
+                <input type="time" id="basal-clock" class="hidden-time-input" onchange="saveBasalTime()">
+            </div>
+        </div>
+        <div id="timer-status" class="timer-label">CALCULATING...</div>
+        <button id="confirm-basal-btn" class="confirm-btn btn-active" onclick="askBasalDose()">Confirm Injection</button>
+    </div>
+
+    <div class="data-controls">
+        <button class="data-btn" onclick="exportData()">↑ Export</button>
+        <button class="data-btn" onclick="document.getElementById('importInput').click()">↓ Import</button>
+        <button class="data-btn btn-danger-text" onclick="deleteAllLogs()">✕ Delete All</button>
+        <input type="file" id="importInput" style="display:none" accept=".json" onchange="importData(event)">
+    </div>
+
+    <div class="log-wrapper" id="log-list"></div>
+
+    <div class="modal-overlay" id="action-modal" onclick="closeActionMenu()">
+        <div class="modal-content" onclick="event.stopPropagation()">
+            <button class="action-btn btn-edit" onclick="handleEditAction()">Edit Entry</button>
+            <button class="action-btn btn-delete" onclick="handleDeleteAction()">Delete Entry</button>
+            <button class="action-btn" style="background:transparent; color:#666" onclick="closeActionMenu()">Cancel</button>
+        </div>
+    </div>
+
+    <div class="back-nav">
+        <a href="./index.html" class="back-btn">← Home</a>
+    </div>
+
+    <script>
+        let currentSelectedId = null;
+
+        function init() {
+            resetForm();
+            initBasal();
+            renderLogs();
+        }
+
+        function resetForm() {
+            document.getElementById('form-title').innerText = "Quick Entry";
+            document.getElementById('save-button').innerText = "Save Entry";
+            document.getElementById('edit-id').value = "";
+            document.getElementById('log-glucose').value = "";
+            document.getElementById('log-insulin').value = "";
+            document.getElementById('log-category').value = "General";
+            document.getElementById('cancel-edit-btn').style.display = "none";
+            const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+            document.getElementById('log-datetime').value = n.toISOString().slice(0, 16);
+        }
+
+        function saveEntry() {
+            const editId = document.getElementById('edit-id').value;
+            const entry = {
+                id: editId || Date.now(),
+                timestamp: document.getElementById('log-datetime').value,
+                glucose: document.getElementById('log-glucose').value || '--',
+                insulin: document.getElementById('log-insulin').value || '0',
+                category: document.getElementById('log-category').value
+            };
+            let logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
+            if(editId) logs[logs.findIndex(l => l.id == editId)] = entry;
+            else logs.push(entry);
+            localStorage.setItem('user_logs', JSON.stringify(logs));
+            resetForm(); renderLogs(); updateBasalDisplay();
+        }
+
+        /* --- DATA MANAGEMENT FUNCTIONS --- */
+        function exportData() {
+            const logs = localStorage.getItem('user_logs') || '[]';
+            const blob = new Blob([logs], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `logs_export_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const imported = JSON.parse(e.target.result);
+                    if (confirm("This will overwrite existing logs. Continue?")) {
+                        localStorage.setItem('user_logs', JSON.stringify(imported));
+                        renderLogs();
+                        updateBasalDisplay();
+                    }
+                } catch (err) { alert("Invalid file format."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function deleteAllLogs() {
+            if (confirm("Are you sure? This will permanently delete ALL entries.")) {
+                localStorage.setItem('user_logs', '[]');
+                renderLogs();
+                updateBasalDisplay();
+            }
+        }
+
+        function initBasal() {
+            document.getElementById('basal-date').value = new Date().toISOString().split('T')[0];
+            document.getElementById('basal-clock').value = localStorage.getItem('user_basal_time') || "22:00";
+            updateBasalDisplay();
+            setInterval(updateBasalDisplay, 1000); 
+        }
+
+        function updateBasalDisplay() {
+            const now = new Date();
+            const dateVal = document.getElementById('basal-date').value;
+            const clockVal = document.getElementById('basal-clock').value;
+            document.getElementById('time-display').innerText = formatTimeToAMPM(clockVal);
+
+            if (dateVal === now.toISOString().split('T')[0]) {
+                document.getElementById('date-label-text').innerText = "TODAY DOSE";
+                const target = new Date(dateVal + 'T' + clockVal);
+                const diff = target - now;
+                if (diff <= 0) {
+                    document.getElementById('basal-tile').classList.add('due');
+                    document.getElementById('timer-status').innerText = "IT'S BASAL TIME";
+                } else {
+                    document.getElementById('basal-tile').classList.remove('due');
+                    const h = Math.floor(diff / 3600000);
+                    const m = Math.floor((diff % 3600000) / 60000);
+                    document.getElementById('timer-status').innerText = `${h}H ${m}M LEFT`;
+                }
+            } else {
+                document.getElementById('date-label-text').innerText = new Date(dateVal + 'T12:00:00').toLocaleDateString([], { month: 'short', day: 'numeric' });
+                document.getElementById('basal-tile').classList.remove('due');
+                document.getElementById('timer-status').innerText = "BACKLOG ENTRY";
+            }
+
+            const logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
+            const exists = logs.some(l => l.category === 'Daily Basal' && l.timestamp.startsWith(dateVal));
+            const btn = document.getElementById('confirm-basal-btn');
+            btn.disabled = exists;
+            btn.innerText = exists ? "Dose Recorded ✓" : "Confirm Injection";
+            btn.className = "confirm-btn " + (exists ? "btn-disabled" : "btn-active");
+        }
+
+        function askBasalDose() {
+            const dose = prompt("Enter Basal Dosage Units:", localStorage.getItem('last_basal_dose') || "20");
+            if (dose) {
+                localStorage.setItem('last_basal_dose', dose);
+                const entry = { id: Date.now(), timestamp: `${document.getElementById('basal-date').value}T${document.getElementById('basal-clock').value}`, glucose: '--', insulin: dose, category: 'Daily Basal' };
+                let logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
+                logs.push(entry); localStorage.setItem('user_logs', JSON.stringify(logs));
+                updateBasalDisplay(); renderLogs();
+            }
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('log-list');
+            let logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
+            if(logs.length === 0) { list.innerHTML = '<div style="text-align:center;color:#444;margin-top:20px; font-size:0.7rem;">NO LOGS YET</div>'; return; }
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const grouped = {};
+            logs.forEach(log => {
+                const dateKey = log.timestamp.split('T')[0];
+                if (!grouped[dateKey]) grouped[dateKey] = [];
+                grouped[dateKey].push(log);
+            });
+            const todayStr = new Date().toISOString().split('T')[0];
+            list.innerHTML = Object.keys(grouped).map(date => {
+                const isToday = date === todayStr;
+                return `
+                    <div class="date-group ${isToday ? '' : 'collapsed'}" id="group-${date}">
+                        <div class="date-header" onclick="document.getElementById('group-${date}').classList.toggle('collapsed')">${isToday ? "TODAY" : new Date(date + 'T12:00:00').toLocaleDateString([], { weekday: 'short', month: 'short', day: 'numeric' })} <span>${grouped[date].length}</span></div>
+                        <div class="entries-container">
+                            ${grouped[date].map(log => `
+                                <div class="log-item" onclick="openActionMenu(${log.id})">
+                                    <div class="log-info">
+                                        <div class="icon-circle">${log.category === 'Daily Basal' ? '🌙' : '💉'}</div>
+                                        <div class="log-details">
+                                            <h3>${log.insulin} Units</h3>
+                                            <div class="value">${log.glucose === '--' ? '' : log.glucose + ' <span style="font-size:0.7rem;color:#555">mg/dL</span>'}</div>
+                                        </div>
+                                    </div>
+                                    <div class="log-right" style="text-align:right">
+                                        <div class="time" style="font-size:0.7rem; color:#555; font-weight:700;">${new Date(log.timestamp).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                                        <div class="log-cat" style="font-size:0.6rem; color:#aaa; text-transform:uppercase; font-weight:700;">${log.category}</div>
+                                    </div>
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function openActionMenu(id) { currentSelectedId = id; document.getElementById('action-modal').classList.add('active'); }
+        function closeActionMenu() { document.getElementById('action-modal').classList.remove('active'); }
+        function handleEditAction() {
+            const entry = JSON.parse(localStorage.getItem('user_logs')).find(l => l.id == currentSelectedId);
+            document.getElementById('form-title').innerText = "Edit Entry";
+            document.getElementById('save-button').innerText = "Update Entry";
+            document.getElementById('edit-id').value = entry.id;
+            document.getElementById('log-datetime').value = entry.timestamp;
+            document.getElementById('log-glucose').value = entry.glucose === '--' ? '' : entry.glucose;
+            document.getElementById('log-insulin').value = entry.insulin;
+            document.getElementById('log-category').value = entry.category;
+            document.getElementById('cancel-edit-btn').style.display = "block";
+            closeActionMenu();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+        function handleDeleteAction() {
+            if(confirm("Delete this entry?")) {
+                const logs = JSON.parse(localStorage.getItem('user_logs')).filter(l => l.id != currentSelectedId);
+                localStorage.setItem('user_logs', JSON.stringify(logs));
+                renderLogs(); updateBasalDisplay(); closeActionMenu();
+            }
+        }
+        function formatTimeToAMPM(timeStr) {
+            let [h, m] = timeStr.split(':');
+            h = parseInt(h);
+            const ampm = h >= 12 ? 'PM' : 'AM';
+            h = h % 12 || 12;
+            return `${h}:${m} ${ampm}`;
+        }
+        function triggerDatePicker() { document.getElementById('basal-date').showPicker(); }
+        function saveBasalTime() { localStorage.setItem('user_basal_time', document.getElementById('basal-clock').value); updateBasalDisplay(); }
+        init();
+    </script>
+</body>
+</html>
