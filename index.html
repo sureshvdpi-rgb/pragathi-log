@@ -11,16 +11,12 @@
             background-color: #0f0f0f; 
             color: #ffffff;
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 15px;
-            padding-bottom: 40px;
+            display: flex; flex-direction: column; align-items: center;
+            min-height: 100vh; padding: 15px; padding-bottom: 40px;
         }
 
         /* HEADER */
-        .container { text-align: center; margin-bottom: 25px; margin-top: 20px; }
+        .container { text-align: center; margin-bottom: 10px; margin-top: 20px; }
         h1 { 
             font-size: 2.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px;
             background: linear-gradient(to bottom, #fff, #888);
@@ -30,166 +26,237 @@
         .age-line { font-size: 0.8rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; cursor: pointer; }
         .divider { width: 40px; height: 4px; background-color: #fff; margin: 10px auto; border-radius: 10px; opacity: 0.8; }
 
-        /* GRID SYSTEM */
-        .grid-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px;
-            width: 100%;
-            max-width: 420px;
+        /* CLICKABLE ALERT SYSTEM */
+        #alert-container {
+            width: 100%; max-width: 420px;
+            display: flex; flex-direction: column;
+            gap: 10px; margin-bottom: 20px;
         }
+        .alert-tile {
+            border-radius: 22px; padding: 16px;
+            display: flex; align-items: center; gap: 15px;
+            border: 1px solid rgba(255,255,255,0.05);
+            animation: slideDown 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-decoration: none;
+            transition: transform 0.1s;
+        }
+        .alert-tile:active { transform: scale(0.96); }
+        .alert-icon { font-size: 1.5rem; }
+        .alert-content h4 { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
+        .alert-content p { font-size: 0.85rem; font-weight: 800; color: #fff; line-height: 1.2; }
 
-        /* TOP WIDE STATUS TILE */
+        /* THEMES */
+        .theme-red { background: rgba(255, 77, 77, 0.15); border-color: #ff4d4d; }
+        .theme-red h4 { color: #ff4d4d; }
+        .theme-orange { background: rgba(255, 149, 0, 0.15); border-color: #ff9500; }
+        .theme-orange h4 { color: #ff9500; }
+        .theme-yellow { background: rgba(255, 204, 0, 0.15); border-color: #ffcc00; }
+        .theme-yellow h4 { color: #ffcc00; }
+        .theme-blue { background: rgba(0, 122, 255, 0.15); border-color: #007aff; }
+        .theme-blue h4 { color: #007aff; }
+
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* DASHBOARD TILES */
+        .grid-wrapper { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; }
         .wide-tile {
-            grid-column: span 2;
             background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
-            border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 28px;
-            padding: 22px 10px;
-            display: grid;
-            grid-template-columns: 1fr 1fr 1fr; 
+            border: 1px solid rgba(255,255,255,0.05); border-radius: 28px;
+            padding: 22px 10px; display: grid; grid-template-columns: 1.2fr 0.9fr 0.9fr; 
             text-decoration: none;
-            margin-bottom: 5px;
         }
-
-        .status-item { text-align: center; border-right: 1px solid rgba(255,255,255,0.08); }
+        .tile-header { grid-column: span 3; font-size: 0.65rem; font-weight: 800; color: #fff; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 18px; opacity: 0.4; text-align: center; }
+        .status-item { text-align: center; border-right: 1px solid rgba(255,255,255,0.08); padding: 0 5px; }
         .status-item:last-child { border-right: none; }
-        
-        .status-label { font-size: 0.55rem; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; letter-spacing: 1px; }
+        .status-label { font-size: 0.5rem; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 4px; letter-spacing: 1px; }
         .status-val { font-size: 1.1rem; font-weight: 900; color: #00ffaa; } 
-        
-        .low-stock { color: #ffcc00; }
-        .expired-text { color: #ff4d4d; animation: blink 1.5s infinite; font-size: 0.9rem; }
+        .log-accent { color: #ff9500; } 
 
-        @keyframes blink { 0% { opacity: 1; } 50% { opacity: 0.4; } 100% { opacity: 1; } }
-
-        /* MENU TILES */
-        .menu-box {
-            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
-            border: 1px solid rgba(255,255,255,0.05);
-            padding: 25px 10px;
-            border-radius: 28px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            min-height: 160px;
-            text-decoration: none;
-            transition: all 0.2s ease;
-        }
-        .menu-box:active, .wide-tile:active { transform: scale(0.96); opacity: 0.8; }
-
-        .icon-circle {
-            width: 45px; height: 45px; background: rgba(255,255,255,0.03);
-            border-radius: 50%; display: flex; align-items: center; justify-content: center;
-            margin-bottom: 12px; font-size: 1.3rem;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        }
-        .menu-box h3 { font-size: 0.6rem; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 4px; }
-        .menu-box .label { font-size: 1rem; font-weight: 800; color: #fff; }
-
+        .data-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 20px; width: 100%; max-width: 420px; }
+        .control-btn { background: #1a1a1a; border: 1px solid #333; color: #888; padding: 18px; border-radius: 24px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+        .btn-danger { grid-column: span 2; color: #ff4d4d; border-color: rgba(255, 77, 77, 0.1); }
         #birthdate-picker { display: none; }
     </style>
 </head>
 <body>
 
     <div class="container">
-        <h1 id="user-name" onclick="editName()">ALEX</h1>
+        <h1 id="user-name" onclick="editName()">Pragathi Suresh</h1>
         <div id="age-display" class="age-line" onclick="triggerAgePicker()">Set Age</div>
         <input type="date" id="birthdate-picker" onchange="updateAge(this.value)">
         <div class="divider"></div>
     </div>
 
+    <div id="alert-container"></div>
+
     <div class="grid-wrapper">
+        <a href="./log.html" class="wide-tile">
+            <div class="tile-header">Glucose Analysis</div>
+            <div class="status-item">
+                <div class="status-label">Last Reading</div>
+                <div class="status-val log-accent" id="sync-last-bg">--</div>
+                <div id="sync-last-time" style="font-size:0.5rem; color:#555; font-weight:700;">No Data</div>
+            </div>
+            <div class="status-item"><div class="status-label">Tests/Day</div><div class="status-val log-accent" id="sync-tests-per-day">--</div></div>
+            <div class="status-item"><div class="status-label">Est. HbA1c</div><div class="status-val log-accent" id="sync-hba1c">--</div></div>
+        </a>
+
         <a href="./supply.html" class="wide-tile">
+            <div class="tile-header">Supply Inventory</div>
             <div class="status-item">
                 <div class="status-label">Needles</div>
                 <div class="status-val" id="sync-needle-status">0</div>
             </div>
-            <div class="status-item">
-                <div class="status-label">Rapid C.</div>
-                <div class="status-val" id="sync-rc-stock">0</div>
-            </div>
-            <div class="status-item">
-                <div class="status-label">Basal C.</div>
-                <div class="status-val" id="sync-bc-stock">0</div>
-            </div>
+            <div class="status-item"><div class="status-label">Rapid C.</div><div class="status-val" id="sync-rc-stock">0</div></div>
+            <div class="status-item"><div class="status-label">Basal C.</div><div class="status-val" id="sync-bc-stock">0</div></div>
         </a>
 
-        <a href="./log.html" class="menu-box">
-            <div class="icon-circle">💉</div>
-            <h3>Track</h3>
-            <div class="label">Logs</div>
-        </a>
-
-        <a href="./supply.html" class="menu-box">
-            <div class="icon-circle">📦</div>
-            <h3>Manage</h3>
-            <div class="label">Supply</div>
-        </a>
-
-        <a href="#" class="menu-box" onclick="alert('Analysis feature coming soon!')">
-            <div class="icon-circle">📈</div>
-            <h3>Analyze</h3>
-            <div class="label">Trends</div>
-        </a>
-
-        <a href="#" class="menu-box" onclick="alert('Settings feature coming soon!')">
-            <div class="icon-circle">⚙️</div>
-            <h3>System</h3>
-            <div class="label">Settings</div>
-        </a>
+        <div class="data-controls">
+            <button class="control-btn" onclick="exportData()">Export Data</button>
+            <button class="control-btn" onclick="document.getElementById('fileImport').click()">Import Data</button>
+            <button class="control-btn btn-danger" onclick="clearAllData()">Clear All Data</button>
+            <input type="file" id="fileImport" style="display:none" accept=".json" onchange="importData(event)">
+        </div>
     </div>
 
     <script>
-        function syncSupplyData() {
-            const now = new Date().getTime();
-            
-            const needleStock = localStorage.getItem('needle_common_stock') || 0;
-            const rnExpiry = localStorage.getItem('rn_expiry');
-            const bnExpiry = localStorage.getItem('bn_expiry');
-            const needleDisplay = document.getElementById('sync-needle-status');
+        function addAlert(title, message, icon, theme, link) {
+            const container = document.getElementById('alert-container');
+            const tile = document.createElement('a');
+            tile.href = link;
+            tile.className = `alert-tile ${theme}`;
+            tile.innerHTML = `
+                <div class="alert-icon">${icon}</div>
+                <div class="alert-content">
+                    <h4>${title}</h4>
+                    <p>${message}</p>
+                </div>
+            `;
+            container.appendChild(tile);
+        }
 
-            const rnExp = rnExpiry && (rnExpiry - now <= 0);
-            const bnExp = bnExpiry && (bnExpiry - now <= 0);
+        function refreshAlerts() {
+            const container = document.getElementById('alert-container');
+            container.innerHTML = ''; 
+            const now = new Date();
 
-            if (rnExp && bnExp) {
-                needleDisplay.innerText = "EXP: BOTH";
-                needleDisplay.className = "status-val expired-text";
-            } else if (rnExp) {
-                needleDisplay.innerText = "EXP: RAPID";
-                needleDisplay.className = "status-val expired-text";
-            } else if (bnExp) {
-                needleDisplay.innerText = "EXP: BASAL";
-                needleDisplay.className = "status-val expired-text";
-            } else {
-                needleDisplay.innerText = needleStock;
-                needleDisplay.className = "status-val " + (parseInt(needleStock) <= 5 ? 'low-stock' : '');
+            // 1. OUT OF STOCK (BUY) ALERTS - RED
+            const rcStock = parseInt(localStorage.getItem('rc_stock') || 0);
+            const bcStock = parseInt(localStorage.getItem('bc_stock') || 0);
+            const strips = parseInt(localStorage.getItem('strip_stock') || 0);
+            const lancets = parseInt(localStorage.getItem('lancet_stock') || 0);
+
+            if (rcStock < 1) addAlert("Stock Empty", "Buy Rapid Cartridge", "🛒", "theme-red", "./supply.html");
+            if (bcStock < 1) addAlert("Stock Empty", "Buy Basal Cartridge", "🛒", "theme-red", "./supply.html");
+            if (strips < 1) addAlert("Stock Empty", "Buy Test Strips", "🛒", "theme-red", "./supply.html");
+            if (lancets < 1) addAlert("Stock Empty", "Buy Lancets Now", "🛒", "theme-red", "./supply.html");
+
+            // 2. NEEDLE & LANCET EXPIRY ALERTS - RED
+            ['rn', 'bn', 'lc'].forEach(key => {
+                const expiry = localStorage.getItem(key + '_expiry');
+                if (expiry && now.getTime() >= parseInt(expiry)) {
+                    let label = "Needle";
+                    if(key === 'rn') label = "Rapid Needle";
+                    if(key === 'bn') label = "Basal Needle";
+                    if(key === 'lc') label = "Lancet";
+                    addAlert("Action Needed", `Change ${label} Now!`, "💉", "theme-red", "./supply.html");
+                }
+            });
+
+            // 3. CARTRIDGE AGE ALERTS - ORANGE
+            ['rc', 'bc'].forEach(key => {
+                const start = localStorage.getItem(key + '_start');
+                if (start) {
+                    const days = Math.floor((now.getTime() - parseInt(start)) / 86400000);
+                    if (days >= 30) {
+                        const label = key === 'rc' ? 'Rapid' : 'Basal';
+                        addAlert("Cartridge Old", `${label} is ${days} days old`, "⚠️", "theme-orange", "./supply.html");
+                    }
+                }
+            });
+
+            // 4. LOW STOCK WARNINGS - YELLOW
+            const needles = parseInt(localStorage.getItem('needle_common_stock') || 0);
+            if (needles > 0 && needles <= 5) addAlert("Low Stock", `Needles: ${needles} left`, "📦", "theme-yellow", "./supply.html");
+            if (strips > 0 && strips <= 10) addAlert("Low Stock", `Strips: ${strips} left`, "📦", "theme-yellow", "./supply.html");
+            if (lancets > 0 && lancets <= 10) addAlert("Low Stock", `Lancets: ${lancets} left`, "📦", "theme-yellow", "./supply.html");
+
+            // 5. BASAL DOSE ALERT - BLUE
+            const bTime = localStorage.getItem('user_basal_time');
+            if (bTime) {
+                const today = now.toISOString().split('T')[0];
+                const target = new Date(today + 'T' + bTime).getTime();
+                const logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
+                const taken = logs.some(l => l.category === 'Daily Basal' && l.timestamp.startsWith(today));
+                if (now.getTime() >= target && !taken) {
+                    addAlert("Injection Due", "Missed Basal Time", "🌙", "theme-blue", "./log.html");
+                }
             }
-
-            updateStockDisplay('sync-rc-stock', localStorage.getItem('rc_stock') || 0, 3);
-            updateStockDisplay('sync-bc-stock', localStorage.getItem('bc_stock') || 0, 3);
         }
 
-        function updateStockDisplay(id, val, lowLimit) {
-            const el = document.getElementById(id);
-            if(!el) return;
-            el.innerText = val;
-            el.className = "status-val " + (parseInt(val) <= lowLimit ? 'low-stock' : '');
+        function syncAllData() {
+            const rawG = localStorage.getItem('glucose_logs');
+            let logs = rawG ? JSON.parse(rawG) : [];
+            if (logs.length > 0) {
+                logs.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
+                const last = logs[logs.length-1];
+                document.getElementById('sync-last-bg').innerText = last.value;
+                const ld = new Date(last.timestamp);
+                document.getElementById('sync-last-time').innerText = `${ld.toLocaleDateString([], {month:'short', day:'numeric'})}, ${ld.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}`;
+                
+                const sevenD = new Date().getTime() - (7 * 24 * 60 * 60 * 1000);
+                const recent = logs.filter(l => new Date(l.timestamp).getTime() > sevenD);
+                document.getElementById('sync-tests-per-day').innerText = (recent.length / 7).toFixed(1);
+
+                const ninetyD = new Date().getTime() - (90 * 24 * 60 * 60 * 1000);
+                const hbaLogs = logs.filter(l => new Date(l.timestamp).getTime() > ninetyD);
+                if (hbaLogs.length > 0) {
+                    const avg = hbaLogs.reduce((s, c) => s + parseFloat(c.value), 0) / hbaLogs.length;
+                    document.getElementById('sync-hba1c').innerHTML = ((avg + 46.7) / 28.7).toFixed(1) + '<span style="font-size:0.6rem;opacity:0.7">%</span>';
+                }
+            }
+            document.getElementById('sync-needle-status').innerText = localStorage.getItem('needle_common_stock') || 0;
+            document.getElementById('sync-rc-stock').innerText = localStorage.getItem('rc_stock') || 0;
+            document.getElementById('sync-bc-stock').innerText = localStorage.getItem('bc_stock') || 0;
+            refreshAlerts();
         }
 
-        function editName() {
-            let n = prompt("Enter your name:", localStorage.getItem('profile_name') || "ALEX");
-            if(n) { localStorage.setItem('profile_name', n); render(); }
+        function exportData() {
+            const allData = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allData[key] = localStorage.getItem(key);
+            }
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(new Blob([JSON.stringify(allData)], { type: 'application/json' }));
+            a.download = `PragathiLog_Backup_${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
         }
 
-        function triggerAgePicker() { document.getElementById('birthdate-picker').showPicker(); }
-        
+        function importData(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    if (confirm("Restore all data from backup?")) {
+                        localStorage.clear();
+                        Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
+                        location.reload();
+                    }
+                } catch (err) { alert("Invalid backup file."); }
+            };
+            reader.readAsText(file);
+        }
+
+        function clearAllData() { if (confirm("Delete ALL data?")) { localStorage.clear(); location.reload(); } }
+        function editName() { let n = prompt("Name:", localStorage.getItem('profile_name') || "Pragathi Suresh"); if(n) { localStorage.setItem('profile_name', n); render(); } }
+        function triggerAgePicker() { try { document.getElementById('birthdate-picker').showPicker(); } catch(e) { document.getElementById('birthdate-picker').click(); } }
         function updateAge(date) { localStorage.setItem('profile_dob', date); render(); }
 
         function render() {
-            document.getElementById('user-name').innerText = localStorage.getItem('profile_name') || "ALEX";
+            document.getElementById('user-name').innerText = localStorage.getItem('profile_name') || "Pragathi Suresh";
             const dob = localStorage.getItem('profile_dob');
             if(dob) {
                 const bday = new Date(dob);
@@ -199,12 +266,12 @@
                 if (m < 0 || (m === 0 && now.getDate() < bday.getDate())) { y--; m += 12; }
                 document.getElementById('age-display').innerText = `${y} Years, ${m} Months`;
             }
-            syncSupplyData();
+            syncAllData();
         }
 
         render();
         window.addEventListener('storage', render);
-        setInterval(syncSupplyData, 30000); 
+        setInterval(syncAllData, 60000); // Auto-refresh every minute
     </script>
 </body>
 </html>
