@@ -41,6 +41,7 @@
             transition: transform 0.1s;
         }
         .alert-tile:active { transform: scale(0.96); }
+
         .alert-icon { font-size: 1.5rem; }
         .alert-content h4 { font-size: 0.55rem; text-transform: uppercase; letter-spacing: 1.5px; margin-bottom: 2px; }
         .alert-content p { font-size: 0.85rem; font-weight: 800; color: #fff; line-height: 1.2; }
@@ -57,7 +58,7 @@
 
         @keyframes slideDown { from { opacity: 0; transform: translateY(-20px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* DASHBOARD TILES */
+        /* DASHBOARD */
         .grid-wrapper { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 420px; }
         .wide-tile {
             background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
@@ -140,30 +141,22 @@
             container.innerHTML = ''; 
             const now = new Date();
 
-            // 1. OUT OF STOCK (BUY) ALERTS - RED
+            // 1. OUT OF STOCK (BUY CARTRIDGE) - RED
             const rcStock = parseInt(localStorage.getItem('rc_stock') || 0);
             const bcStock = parseInt(localStorage.getItem('bc_stock') || 0);
-            const strips = parseInt(localStorage.getItem('strip_stock') || 0);
-            const lancets = parseInt(localStorage.getItem('lancet_stock') || 0);
-
             if (rcStock < 1) addAlert("Stock Empty", "Buy Rapid Cartridge", "🛒", "theme-red", "./supply.html");
             if (bcStock < 1) addAlert("Stock Empty", "Buy Basal Cartridge", "🛒", "theme-red", "./supply.html");
-            if (strips < 1) addAlert("Stock Empty", "Buy Test Strips", "🛒", "theme-red", "./supply.html");
-            if (lancets < 1) addAlert("Stock Empty", "Buy Lancets Now", "🛒", "theme-red", "./supply.html");
 
-            // 2. NEEDLE & LANCET EXPIRY ALERTS - RED
-            ['rn', 'bn', 'lc'].forEach(key => {
+            // 2. NEEDLE EXPIRY ALERT - RED
+            ['rn', 'bn'].forEach(key => {
                 const expiry = localStorage.getItem(key + '_expiry');
                 if (expiry && now.getTime() >= parseInt(expiry)) {
-                    let label = "Needle";
-                    if(key === 'rn') label = "Rapid Needle";
-                    if(key === 'bn') label = "Basal Needle";
-                    if(key === 'lc') label = "Lancet";
-                    addAlert("Action Needed", `Change ${label} Now!`, "💉", "theme-red", "./supply.html");
+                    const label = key === 'rn' ? 'Rapid' : 'Basal';
+                    addAlert("Action Needed", `Change ${label} Needle Now!`, "💉", "theme-red", "./supply.html");
                 }
             });
 
-            // 3. CARTRIDGE AGE ALERTS - ORANGE
+            // 3. OLD CARTRIDGE ALERT - ORANGE
             ['rc', 'bc'].forEach(key => {
                 const start = localStorage.getItem(key + '_start');
                 if (start) {
@@ -175,11 +168,11 @@
                 }
             });
 
-            // 4. LOW STOCK WARNINGS - YELLOW
+            // 4. LOW STOCK WARNING - YELLOW
             const needles = parseInt(localStorage.getItem('needle_common_stock') || 0);
             if (needles > 0 && needles <= 5) addAlert("Low Stock", `Needles: ${needles} left`, "📦", "theme-yellow", "./supply.html");
-            if (strips > 0 && strips <= 10) addAlert("Low Stock", `Strips: ${strips} left`, "📦", "theme-yellow", "./supply.html");
-            if (lancets > 0 && lancets <= 10) addAlert("Low Stock", `Lancets: ${lancets} left`, "📦", "theme-yellow", "./supply.html");
+            if (rcStock === 1) addAlert("Low Stock", "Rapid Cart: 1 left", "📦", "theme-yellow", "./supply.html");
+            if (bcStock === 1) addAlert("Low Stock", "Basal Cart: 1 left", "📦", "theme-yellow", "./supply.html");
 
             // 5. BASAL DOSE ALERT - BLUE
             const bTime = localStorage.getItem('user_basal_time');
@@ -227,30 +220,27 @@
                 const key = localStorage.key(i);
                 allData[key] = localStorage.getItem(key);
             }
-            const a = document.createElement('a');
-            a.href = URL.createObjectURL(new Blob([JSON.stringify(allData)], { type: 'application/json' }));
-            a.download = `PragathiLog_Backup_${new Date().toISOString().split('T')[0]}.json`;
-            a.click();
+            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(allData)], { type: 'application/json' }));
+            a.download = `PragathiLog_Backup_${new Date().toISOString().split('T')[0]}.json`; a.click();
         }
 
         function importData(event) {
-            const file = event.target.files[0];
-            if (!file) return;
+            const file = event.target.files[0]; if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (confirm("Restore all data from backup?")) {
+                    if (confirm("Restore all data?")) {
                         localStorage.clear();
                         Object.keys(data).forEach(k => localStorage.setItem(k, data[k]));
                         location.reload();
                     }
-                } catch (err) { alert("Invalid backup file."); }
+                } catch (err) { alert("Invalid backup."); }
             };
             reader.readAsText(file);
         }
 
-        function clearAllData() { if (confirm("Delete ALL data?")) { localStorage.clear(); location.reload(); } }
+        function clearAllData() { if (confirm("Delete ALL?")) { localStorage.clear(); location.reload(); } }
         function editName() { let n = prompt("Name:", localStorage.getItem('profile_name') || "Pragathi Suresh"); if(n) { localStorage.setItem('profile_name', n); render(); } }
         function triggerAgePicker() { try { document.getElementById('birthdate-picker').showPicker(); } catch(e) { document.getElementById('birthdate-picker').click(); } }
         function updateAge(date) { localStorage.setItem('profile_dob', date); render(); }
@@ -259,8 +249,7 @@
             document.getElementById('user-name').innerText = localStorage.getItem('profile_name') || "Pragathi Suresh";
             const dob = localStorage.getItem('profile_dob');
             if(dob) {
-                const bday = new Date(dob);
-                const now = new Date();
+                const bday = new Date(dob); const now = new Date();
                 let y = now.getFullYear() - bday.getFullYear();
                 let m = now.getMonth() - bday.getMonth();
                 if (m < 0 || (m === 0 && now.getDate() < bday.getDate())) { y--; m += 12; }
@@ -271,7 +260,6 @@
 
         render();
         window.addEventListener('storage', render);
-        setInterval(syncAllData, 60000); // Auto-refresh every minute
     </script>
 </body>
 </html>
