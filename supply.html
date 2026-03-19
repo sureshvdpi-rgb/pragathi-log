@@ -7,317 +7,442 @@
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        body {
+        body { 
             background-color: #0f0f0f; 
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-            padding: 15px; /* Reduced padding */
-            padding-bottom: 120px;
+            color: #ffffff; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+            min-height: 100vh; 
+            padding: 15px; 
+            padding-bottom: 120px; 
         }
 
-        /* HEADER: Reduced spacing */
-        .container { text-align: center; margin-bottom: 15px; margin-top: 10px; }
+        .header-row {
+            width: 100%;
+            max-width: 420px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            margin-top: 10px;
+            margin-bottom: 15px;
+        }
+        
         h1 { 
             font-size: 2.8rem; 
             font-weight: 900; 
             text-transform: uppercase; 
-            letter-spacing: -2px;
-            background: linear-gradient(to bottom, #fff, #888);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .divider { width: 40px; height: 4px; background-color: #fff; margin: 5px auto; border-radius: 10px; opacity: 0.8; }
-
-        .grid-wrapper {
-            display: grid;
-            grid-template-columns: 1fr 1fr; 
-            gap: 12px;
-            width: 100%;
-            max-width: 420px;
+            letter-spacing: -2px; 
+            background: linear-gradient(to bottom, #fff, #888); 
+            -webkit-background-clip: text; 
+            -webkit-text-fill-color: transparent; 
         }
 
-        .info-box {
-            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
-            border: 1px solid rgba(255,255,255,0.05);
-            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
-            padding: 22px 10px;
-            border-radius: 28px;
-            text-align: center;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            min-height: 240px;
-            position: relative;
-        }
-
-        .edit-icon {
+        .settings-btn {
             position: absolute;
-            top: 18px;
-            left: 18px;
-            width: 15px;
-            height: 15px;
-            fill: #555;
-            transition: fill 0.2s;
-        }
-        .edit-icon:active { fill: #fff; }
-
-        .info-box h3 { 
-            font-size: 0.65rem; 
-            color: #888; 
-            text-transform: uppercase; 
-            letter-spacing: 1.2px; 
-            margin-top: 5px;
-        }
-        
-        .day-text { 
-            font-size: 1.3rem; 
-            font-weight: 800; 
-            margin: 8px 0;
-            color: #fff;
-        }
-
-        .last-made {
-            font-size: 0.6rem;
-            color: #555;
-            margin-bottom: 8px;
-        }
-
-        .stock-container {
-            font-size: 0.75rem;
-            margin-top: 10px;
-            color: #666;
-            font-weight: 600;
-        }
-        .stock-num { 
-            display: inline-block;
-            cursor: pointer; 
-            padding: 5px 12px; 
-            background: rgba(0,0,0,0.5); 
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 44px;
+            height: 44px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
             border-radius: 12px;
-            color: #00ffaa;
-            font-size: 0.95rem;
-            font-weight: 800;
-            border: 1px solid rgba(255,255,255,0.05);
-            margin-top: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
         }
-        .stock-low { color: #ffcc00 !important; border-color: rgba(255,204,0,0.2); }
-        .stock-out { color: #ff4d4d !important; border-color: rgba(255,77,77,0.2); }
 
-        .new-status { color: #00ffaa !important; }
+        .divider { width: 40px; height: 4px; background-color: #fff; margin: 5px auto; border-radius: 10px; opacity: 0.8; }
+        
+        .grid-wrapper { 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+            width: 100%; 
+            max-width: 420px; 
+        }
+
+        .info-box { 
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e); 
+            border: 1px solid rgba(255,255,255,0.05); 
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3); 
+            padding: 20px; 
+            border-radius: 28px; 
+            display: grid; 
+            grid-template-columns: 60px 1fr 100px; 
+            align-items: center; 
+            gap: 15px;
+        }
+
+        .stock-display {
+            text-align: center;
+            border-right: 1px solid rgba(255,255,255,0.08);
+            padding-right: 10px;
+        }
+
+        .stock-count { font-size: 1.4rem; font-weight: 900; color: #00ffaa; display: block; }
+        .stock-label { font-size: 0.5rem; color: #555; text-transform: uppercase; font-weight: 800; }
+
+        .info-content { text-align: left; }
+        .info-box h3 { font-size: 0.6rem; color: #888; text-transform: uppercase; letter-spacing: 1.2px; margin-bottom: 2px; }
+        .day-text { font-size: 1.1rem; font-weight: 800; color: #fff; }
+        .expiry-text { font-size: 0.55rem; color: #444; font-weight: 700; margin-top: 2px; }
+
+        .stock-low { color: #ffcc00 !important; }
+        .stock-out { color: #ff4d4d !important; }
         .expired { color: #ff4d4d !important; animation: pulse 2s infinite; }
         @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.6; } 100% { opacity: 1; } }
 
-        .box-btn {
-            background-color: #ffffff;
-            color: #000;
-            border: none;
-            padding: 12px;
-            width: 85%;
-            margin: 0 auto;
-            border-radius: 16px;
-            font-size: 0.75rem;
-            font-weight: 800;
-            cursor: pointer;
-            text-transform: uppercase;
+        .box-btn { 
+            background-color: #ffffff; color: #000; border: none; padding: 12px; width: 100%;
+            border-radius: 14px; font-size: 0.65rem; font-weight: 800; cursor: pointer; text-transform: uppercase; 
         }
-        .box-btn:active { transform: scale(0.92); background-color: #ddd; }
+        .last-made { font-size: 0.55rem; color: #444; margin-top: 5px; text-align: center; font-weight: 700; }
 
-        .back-nav {
-            position: fixed;
-            bottom: 30px;
-            width: 100%;
-            display: flex;
-            justify-content: center;
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); backdrop-filter: blur(10px);
+            display: none; justify-content: center; align-items: flex-end; z-index: 2000;
         }
-
-        .back-btn {
-            background-color: rgba(255, 255, 255, 0.05);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            color: #fff;
-            text-decoration: none;
-            font-size: 0.75rem;
-            text-transform: uppercase;
-            letter-spacing: 2px;
-            font-weight: 700;
-            padding: 16px 40px;
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 100px;
+        .modal-content {
+            background: #1a1a1a; width: 100%; max-width: 450px;
+            border-radius: 40px 40px 0 0; padding: 30px 25px 40px;
+            animation: slideUp 0.3s ease-out;
+            max-height: 90vh; overflow-y: auto;
         }
+        @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+        
+        .form-group { margin-bottom: 20px; }
+        .form-group label { display: block; font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; }
+        .form-group select, .form-group input { 
+            width: 100%; background: #252525; border: 1px solid #333; 
+            padding: 15px; border-radius: 15px; color: #fff; font-size: 0.9rem; outline: none;
+        }
+        .checkbox-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; margin-bottom: 10px; }
+        .checkbox-row input { width: 18px; height: 18px; accent-color: #00ffaa; }
+        .checkbox-row span { font-size: 0.75rem; color: #888; font-weight: 600; }
 
-        input[type="date"] { display: none; }
+        .modal-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 10px; }
+        .save-btn { background: #fff; color: #000; padding: 18px; border-radius: 1000px; font-weight: 900; text-transform: uppercase; border: none; cursor: pointer; font-size: 0.8rem; }
+        .cancel-btn { background: rgba(255,255,255,0.05); color: #888; padding: 18px; border-radius: 1000px; font-weight: 800; text-transform: uppercase; border: none; cursor: pointer; font-size: 0.8rem; }
+
+        .back-nav { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 1000;}
+        .back-btn { background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #fff; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; padding: 16px 40px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; }
     </style>
 </head>
 <body>
-
-    <div class="container">
+    <div class="header-row">
         <h1>SUPPLY</h1>
-        <div class="divider"></div>
+        <div class="settings-btn" onclick="openSettings()">
+            <svg width="20" height="20" fill="#fff" viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>
+        </div>
     </div>
-
+    <div class="divider"></div>
+    
     <div class="grid-wrapper">
         <div class="info-box">
-            <svg class="edit-icon" onclick="triggerPicker('rn-picker')" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-            <h3>Rapid Needle</h3>
-            <div class="day-text" id="rn-display" onclick="updateNeedleGoal('rn')">Set Days</div>
+            <div class="stock-display">
+                <span class="stock-count" id="rn-stock-main">0</span>
+                <span class="stock-label">Stock</span>
+            </div>
+            <div class="info-content">
+                <h3>Rapid Needle</h3>
+                <div class="day-text" id="rn-display">Set Days</div>
+                <div class="expiry-text" id="rn-exp-info">Exp: No Data</div>
+            </div>
             <div>
-                <div class="last-made" id="rn-last">No Record</div>
                 <button class="box-btn" onclick="recordChange('rn', 'needle')">Changed</button>
-                <div class="stock-container">STOCK: <br><span class="stock-num" id="shared-needle-stock" onclick="setStock('needle_common')">0</span></div>
+                <div class="last-made" id="rn-last">No Record</div>
             </div>
-            <input type="date" id="rn-picker" onchange="backdateChange('rn', this.value, 'needle')">
         </div>
 
         <div class="info-box">
-            <svg class="edit-icon" onclick="triggerPicker('bn-picker')" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-            <h3>Basal Needle</h3>
-            <div class="day-text" id="bn-display" onclick="updateNeedleGoal('bn')">Set Days</div>
+            <div class="stock-display">
+                <span class="stock-count" id="bn-stock-main">0</span>
+                <span class="stock-label">Stock</span>
+            </div>
+            <div class="info-content">
+                <h3>Basal Needle</h3>
+                <div class="day-text" id="bn-display">Set Days</div>
+                <div class="expiry-text" id="bn-exp-info">Exp: No Data</div>
+            </div>
             <div>
-                <div class="last-made" id="bn-last">No Record</div>
                 <button class="box-btn" onclick="recordChange('bn', 'needle')">Changed</button>
-                <div class="stock-container">STOCK: <br><span class="stock-num" id="shared-needle-stock-2" onclick="setStock('needle_common')">0</span></div>
+                <div class="last-made" id="bn-last">No Record</div>
             </div>
-            <input type="date" id="bn-picker" onchange="backdateChange('bn', this.value, 'needle')">
         </div>
 
         <div class="info-box">
-            <svg class="edit-icon" onclick="triggerPicker('rc-picker')" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-            <h3>Rapid Cart.</h3>
-            <div class="day-text" id="rc-display">No Data</div>
+            <div class="stock-display">
+                <span class="stock-count" id="rc-stock-main">0</span>
+                <span class="stock-label">Stock</span>
+            </div>
+            <div class="info-content">
+                <h3>Rapid Cart.</h3>
+                <div class="day-text" id="rc-display">No Data</div>
+                <div class="expiry-text" id="rc-exp-info">Exp: No Data</div>
+            </div>
             <div>
-                <div class="last-made" id="rc-last">No Record</div>
                 <button class="box-btn" onclick="recordChange('rc', 'cartridge')">Changed</button>
-                <div class="stock-container">STOCK: <br><span class="stock-num" id="rc-stock" onclick="setStock('rc')">0</span></div>
+                <div class="last-made" id="rc-last">No Record</div>
             </div>
-            <input type="date" id="rc-picker" onchange="backdateChange('rc', this.value, 'cartridge')">
         </div>
 
         <div class="info-box">
-            <svg class="edit-icon" onclick="triggerPicker('bc-picker')" viewBox="0 0 24 24"><path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25zM20.71 7.04c.39-.39.39-1.02 0-1.41l-2.34-2.34c-.39-.39-1.02-.39-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83z"/></svg>
-            <h3>Basal Cart.</h3>
-            <div class="day-text" id="bc-display">No Data</div>
-            <div>
-                <div class="last-made" id="bc-last">No Record</div>
-                <button class="box-btn" onclick="recordChange('bc', 'cartridge')">Changed</button>
-                <div class="stock-container">STOCK: <br><span class="stock-num" id="bc-stock" onclick="setStock('bc')">0</span></div>
+            <div class="stock-display">
+                <span class="stock-count" id="bc-stock-main">0</span>
+                <span class="stock-label">Stock</span>
             </div>
-            <input type="date" id="bc-picker" onchange="backdateChange('bc', this.value, 'cartridge')">
+            <div class="info-content">
+                <h3>Basal Cart.</h3>
+                <div class="day-text" id="bc-display">No Data</div>
+                <div class="expiry-text" id="bc-exp-info">Exp: No Data</div>
+            </div>
+            <div>
+                <button class="box-btn" onclick="recordChange('bc', 'cartridge')">Changed</button>
+                <div class="last-made" id="bc-last">No Record</div>
+            </div>
+        </div>
+
+        <div class="info-box">
+            <div class="stock-display">
+                <span class="stock-count" id="strip-stock-main">0</span>
+                <span class="stock-label">Stock</span>
+            </div>
+            <div class="info-content">
+                <h3>Test Strips</h3>
+                <div class="day-text">Manual Check</div>
+                <div class="expiry-text" id="strip-exp-info">Exp: No Data</div>
+            </div>
+            <div class="last-made" id="strip-last">Check Stock</div>
+        </div>
+
+        <div class="info-box">
+            <div class="stock-display">
+                <span class="stock-count" id="lancet-stock-main">0</span>
+                <span class="stock-label">Stock</span>
+            </div>
+            <div class="info-content">
+                <h3>Lancet</h3>
+                <div class="day-text" id="lc-display">Set Days</div>
+                <div class="expiry-text" id="lc-exp-info">Exp: No Data</div>
+            </div>
+            <div>
+                <button class="box-btn" onclick="recordChange('lc', 'lancet')">Changed</button>
+                <div class="last-made" id="lc-last">No Record</div>
+            </div>
         </div>
     </div>
 
-    <div class="back-nav">
-        <a href="./index.html" class="back-btn">← Home</a>
+    <div class="modal-overlay" id="settings-modal">
+        <div class="modal-content">
+            <h2 style="font-size: 1.2rem; font-weight: 900; text-transform: uppercase; margin-bottom: 25px; text-align: center;">Stock Update</h2>
+            
+            <div class="form-group">
+                <label>Select Category</label>
+                <select id="set-category" onchange="loadCategorySettings()">
+                    <option value="needle_common">Needle (Shared)</option>
+                    <option value="rc">Rapid Cartridge</option>
+                    <option value="bc">Basal Cartridge</option>
+                    <option value="strip">Test Strips</option>
+                    <option value="lancet">Lancet</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Add Stock</label>
+                <input type="number" id="set-add-stock" placeholder="Enter amount to add">
+            </div>
+
+            <div id="replacement-inputs"></div>
+
+            <div class="form-group">
+                <label>Set low stock alert</label>
+                <input type="number" id="set-low-alert" placeholder="Alert at value">
+            </div>
+
+            <div class="form-group">
+                <label>Product Expiry Date</label>
+                <input type="date" id="set-expiry-date">
+                <div class="checkbox-row">
+                    <input type="checkbox" id="set-never-expiry" onchange="toggleExpiry(this.checked)">
+                    <span>Never Expiry</span>
+                </div>
+            </div>
+
+            <div class="modal-actions">
+                <button class="cancel-btn" onclick="closeSettings()">Cancel</button>
+                <button class="save-btn" onclick="saveSettings()">Save Changes</button>
+            </div>
+        </div>
     </div>
 
+    <div class="back-nav"><a href="./index.html" class="back-btn">← Home</a></div>
+    
     <script>
-        function triggerPicker(id) { document.getElementById(id).showPicker(); }
-        function getFormattedDate(dateObj = new Date()) { return `Last: ${dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' })}`; }
+        function openSettings() { 
+            document.getElementById('settings-modal').style.display = 'flex'; 
+            loadCategorySettings();
+        }
+        function closeSettings() { document.getElementById('settings-modal').style.display = 'none'; }
 
-        function setStock(key) {
-            let amount = prompt("Set current stock count:", localStorage.getItem(key + '_stock') || "0");
-            if (amount !== null && !isNaN(amount)) {
-                localStorage.setItem(key + '_stock', amount);
-                updateUI();
+        function toggleValidity(id, checked) {
+            const input = document.getElementById(id);
+            input.disabled = checked;
+            if(checked) input.value = '';
+        }
+
+        function toggleExpiry(checked) {
+            const input = document.getElementById('set-expiry-date');
+            input.disabled = checked;
+            if(checked) input.value = '';
+        }
+
+        function loadCategorySettings() {
+            const key = document.getElementById('set-category').value;
+            const container = document.getElementById('replacement-inputs');
+            container.innerHTML = '';
+            document.getElementById('set-add-stock').value = '';
+
+            if (key === 'needle_common') {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label>Rapid Needle: Days to replace</label>
+                        <input type="number" id="set-goal-rn">
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="rn-no-val" onchange="toggleValidity('set-goal-rn', this.checked)">
+                            <span>No validity</span>
+                        </div>
+                        <label>Backlog: Last Rapid Change</label>
+                        <input type="date" id="backlog-rn">
+                    </div>
+                    <div class="form-group">
+                        <label>Basal Needle: Days to replace</label>
+                        <input type="number" id="set-goal-bn">
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="bn-no-val" onchange="toggleValidity('set-goal-bn', this.checked)">
+                            <span>No validity</span>
+                        </div>
+                        <label>Backlog: Last Basal Change</label>
+                        <input type="date" id="backlog-bn">
+                    </div>
+                `;
+                document.getElementById('set-goal-rn').value = localStorage.getItem('rn_goal') || '';
+                document.getElementById('set-goal-bn').value = localStorage.getItem('bn_goal') || '';
+            } else {
+                container.innerHTML = `
+                    <div class="form-group">
+                        <label>Days to replace</label>
+                        <input type="number" id="set-goal-single">
+                        <div class="checkbox-row">
+                            <input type="checkbox" id="single-no-val" onchange="toggleValidity('set-goal-single', this.checked)">
+                            <span>No validity</span>
+                        </div>
+                        <label>Backlog: Last Change Made</label>
+                        <input type="date" id="backlog-single">
+                    </div>
+                `;
+                document.getElementById('set-goal-single').value = localStorage.getItem(key + '_goal') || '';
             }
+
+            document.getElementById('set-low-alert').value = localStorage.getItem(key + '_low_alert') || '';
+            const expiry = localStorage.getItem(key + '_product_expiry');
+            document.getElementById('set-expiry-date').value = expiry || '';
+            document.getElementById('set-never-expiry').checked = !expiry;
+            toggleExpiry(!expiry);
         }
 
-        function deductStock(type, key) {
-            const stockKey = (type === 'needle') ? 'needle_common' : key;
-            let current = parseInt(localStorage.getItem(stockKey + '_stock') || 0);
-            if (current > 0) localStorage.setItem(stockKey + '_stock', current - 1);
+        function saveSettings() {
+            const key = document.getElementById('set-category').value;
+            const addVal = parseInt(document.getElementById('set-add-stock').value || 0);
+            if (addVal !== 0) {
+                const current = parseInt(localStorage.getItem(key + '_stock') || 0);
+                localStorage.setItem(key + '_stock', current + addVal);
+            }
+
+            if (key === 'needle_common') {
+                updateBacklog('rn', document.getElementById('set-goal-rn').value, document.getElementById('backlog-rn').value);
+                updateBacklog('bn', document.getElementById('set-goal-bn').value, document.getElementById('backlog-bn').value);
+            } else {
+                updateBacklog(key, document.getElementById('set-goal-single').value, document.getElementById('backlog-single').value);
+            }
+
+            localStorage.setItem(key + '_low_alert', document.getElementById('set-low-alert').value);
+            localStorage.setItem(key + '_product_expiry', document.getElementById('set-expiry-date').value);
+            updateUI(); closeSettings();
         }
 
-        function updateNeedleGoal(key) {
-            let days = prompt("Set needle duration (days):", localStorage.getItem(key + '_goal') || "1");
-            if (days && !isNaN(days)) {
-                localStorage.setItem(key + '_goal', days);
-                const lastTS = localStorage.getItem(key + '_raw_last_change');
-                if (lastTS) localStorage.setItem(key + '_expiry', parseInt(lastTS) + (parseInt(days) * 86400000));
-                updateUI();
+        function updateBacklog(key, goal, backlogDate) {
+            localStorage.setItem(key + '_goal', goal);
+            if(backlogDate) {
+                const ts = new Date(backlogDate).getTime();
+                localStorage.setItem(key + '_raw_last_change', ts);
+                localStorage.setItem(key + '_last_timestamp', `Last: ${new Date(backlogDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}`);
+                if (goal) localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
             }
         }
 
         function recordChange(key, type) {
-            const now = new Date();
-            const ts = now.getTime();
+            const now = new Date(); const ts = now.getTime();
             localStorage.setItem(key + '_raw_last_change', ts);
-            if (type === 'needle') {
-                const goal = localStorage.getItem(key + '_goal') || 1;
-                localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
-            } else {
-                localStorage.setItem(key + '_start', ts);
-            }
-            deductStock(type, key);
-            localStorage.setItem(key + '_last_timestamp', getFormattedDate(now));
-            updateUI();
-        }
-
-        function backdateChange(key, dateString, type) {
-            const pickedDate = new Date(dateString);
-            const ts = pickedDate.getTime();
-            localStorage.setItem(key + '_raw_last_change', ts);
-            if (type === 'needle') {
-                const goal = localStorage.getItem(key + '_goal') || 1;
-                localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
-            } else {
-                localStorage.setItem(key + '_start', ts);
-            }
-            localStorage.setItem(key + '_last_timestamp', getFormattedDate(pickedDate));
+            const goal = localStorage.getItem(key + '_goal');
+            if (goal) localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
+            else localStorage.removeItem(key + '_expiry');
+            let stockKey = (type === 'needle') ? 'needle_common' : (type === 'lancet' ? 'lancet' : key);
+            let current = parseInt(localStorage.getItem(stockKey + '_stock') || 0);
+            if (current > 0) localStorage.setItem(stockKey + '_stock', current - 1);
+            localStorage.setItem(key + '_last_timestamp', `Last: ${now.toLocaleDateString([], { month: 'short', day: 'numeric' })}`);
             updateUI();
         }
 
         function updateUI() {
             const now = new Date().getTime();
-            const commonNeedleVal = parseInt(localStorage.getItem('needle_common_stock') || 0);
-            ['shared-needle-stock', 'shared-needle-stock-2'].forEach(id => {
+            const needleStock = parseInt(localStorage.getItem('needle_common_stock') || 0);
+            const nLow = parseInt(localStorage.getItem('needle_common_low_alert') || 5);
+            ['rn-stock-main', 'bn-stock-main'].forEach(id => {
                 const el = document.getElementById(id);
-                if(el){
-                    el.innerText = commonNeedleVal;
-                    el.className = 'stock-num ' + (commonNeedleVal === 0 ? 'stock-out' : (commonNeedleVal <= 5 ? 'stock-low' : ''));
+                el.innerText = needleStock;
+                el.className = 'stock-count ' + (needleStock === 0 ? 'stock-out' : (needleStock <= nLow ? 'stock-low' : ''));
+            });
+
+            ['rc', 'bc', 'strip', 'lancet'].forEach(key => {
+                const val = parseInt(localStorage.getItem(key + '_stock') || 0);
+                const low = parseInt(localStorage.getItem(key + '_low_alert') || (key === 'strip' ? 10 : 3));
+                const el = document.getElementById(key + '-stock-main');
+                if(el) {
+                    el.innerText = val;
+                    el.className = 'stock-count ' + (val === 0 ? 'stock-out' : (val <= low ? 'stock-low' : ''));
                 }
             });
 
-            ['rc', 'bc'].forEach(key => {
-                const stockEl = document.getElementById(key + '-stock');
-                if(stockEl){
-                    const val = parseInt(localStorage.getItem(key + '_stock') || 0);
-                    stockEl.innerText = val;
-                    stockEl.className = 'stock-num ' + (val === 0 ? 'stock-out' : (val <= 3 ? 'stock-low' : ''));
-                }
-                const start = localStorage.getItem(key + '_start');
+            ['rn', 'bn', 'rc', 'bc', 'lc'].forEach(key => {
                 const display = document.getElementById(key + '-display');
-                if (start && display) {
-                    const daysOld = Math.floor((now - start) / 86400000);
-                    display.innerText = daysOld < 1 ? "NEW" : `${daysOld} Day${daysOld === 1 ? '' : 's'} Old`;
-                    daysOld < 1 ? display.classList.add('new-status') : display.classList.remove('new-status');
-                }
-                const lastTime = localStorage.getItem(key + '_last_timestamp');
-                if (lastTime && document.getElementById(key + '-last')) document.getElementById(key + '-last').innerText = lastTime;
-            });
-
-            ['rn', 'bn'].forEach(key => {
+                const expInfo = document.getElementById(key + '-exp-info');
                 const expiry = localStorage.getItem(key + '_expiry');
-                const display = document.getElementById(key + '-display');
-                if (expiry && display) {
+                if(!expiry) { 
+                    display.innerText = "No Limit"; 
+                } else {
                     const diff = expiry - now;
-                    if (diff <= 0) { display.innerText = "EXPIRED"; display.classList.add('expired'); }
-                    else {
-                        const daysLeft = Math.ceil(diff / 86400000);
-                        display.innerText = `${daysLeft} Day${daysLeft === 1 ? '' : 's'} Left`;
+                    if(diff <= 0) { display.innerText = "EXPIRED"; display.classList.add('expired'); }
+                    else { 
+                        const days = Math.ceil(diff / 86400000);
+                        display.innerText = `${days} Day${days === 1 ? '' : 's'} Left`;
                         display.classList.remove('expired');
                     }
                 }
-                const lastTime = localStorage.getItem(key + '_last_timestamp');
-                if (lastTime && document.getElementById(key + '-last')) document.getElementById(key + '-last').innerText = lastTime;
+                const prodExp = localStorage.getItem((key === 'rn' || key === 'bn' ? 'needle_common' : (key === 'lc' ? 'lancet' : key)) + '_product_expiry');
+                if(expInfo) expInfo.innerText = prodExp ? `Exp: ${new Date(prodExp).toLocaleDateString([], {month:'short', day:'numeric'})}` : "Exp: Never";
+                const ts = localStorage.getItem(key + '_last_timestamp');
+                const tsEl = document.getElementById(key + '-last');
+                if(ts && tsEl) tsEl.innerText = ts;
             });
         }
         updateUI();
         setInterval(updateUI, 60000);
-        window.addEventListener('storage', updateUI);
     </script>
 </body>
 </html>
