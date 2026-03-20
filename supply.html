@@ -379,19 +379,32 @@
         function updateBacklog(key, goal, backlogDate) {
             localStorage.setItem(key + '_goal', goal);
             if(backlogDate) {
-                const ts = new Date(backlogDate).getTime();
+                // Strip time from backlog date to ensure calendar day logic
+                const d = new Date(backlogDate);
+                d.setHours(0,0,0,0);
+                const ts = d.getTime();
                 localStorage.setItem(key + '_raw_last_change', ts);
-                localStorage.setItem(key + '_last_timestamp', `Last: ${new Date(backlogDate).toLocaleDateString([], { month: 'short', day: 'numeric' })}`);
+                localStorage.setItem(key + '_last_timestamp', `Last: ${d.toLocaleDateString([], { month: 'short', day: 'numeric' })}`);
                 if (goal) localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
             }
         }
 
         function recordChange(key, type) {
-            const now = new Date(); const ts = now.getTime();
+            // Strip time from current date to ensure calendar day logic
+            const now = new Date(); 
+            now.setHours(0,0,0,0); 
+            const ts = now.getTime();
+            
             localStorage.setItem(key + '_raw_last_change', ts);
             const goal = localStorage.getItem(key + '_goal');
-            if (goal) localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
-            else localStorage.removeItem(key + '_expiry');
+            
+            if (goal) {
+                // Expiry is calculated as Start of Day + Goal Days
+                localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
+            } else {
+                localStorage.removeItem(key + '_expiry');
+            }
+            
             let stockKey = (type === 'needle') ? 'needle_common' : (type === 'lancet' ? 'lancet' : key);
             let current = parseInt(localStorage.getItem(stockKey + '_stock') || 0);
             if (current > 0) localStorage.setItem(stockKey + '_stock', current - 1);
@@ -400,7 +413,11 @@
         }
 
         function updateUI() {
-            const now = new Date().getTime();
+            // Strip time from comparison date to ensure calendar day logic
+            const nowObj = new Date();
+            nowObj.setHours(0,0,0,0);
+            const now = nowObj.getTime();
+
             const needleStock = parseInt(localStorage.getItem('needle_common_stock') || 0);
             const nLow = parseInt(localStorage.getItem('needle_common_low_alert') || 5);
             ['rn-stock-main', 'bn-stock-main'].forEach(id => {
@@ -426,8 +443,11 @@
                 if(!expiry) { 
                     display.innerText = "No Limit"; 
                 } else {
-                    const diff = expiry - now;
-                    if(diff <= 0) { display.innerText = "EXPIRED"; display.classList.add('expired'); }
+                    const diff = parseInt(expiry) - now;
+                    if(diff <= 0) { 
+                        display.innerText = "EXPIRED"; 
+                        display.classList.add('expired'); 
+                    }
                     else { 
                         const days = Math.ceil(diff / 86400000);
                         display.innerText = `${days} Day${days === 1 ? '' : 's'} Left`;

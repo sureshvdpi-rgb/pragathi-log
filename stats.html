@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Medical Stats</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            background-color: #0f0f0f; 
+            color: #ffffff; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 15px; padding-bottom: 120px;
+        }
+
+        h1 { 
+            font-size: 2.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px; 
+            background: linear-gradient(to bottom, #fff, #888); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            margin-top: 10px;
+        }
+        .divider { width: 40px; height: 4px; background-color: #007aff; margin: 10px auto 25px; border-radius: 10px; }
+
+        .stats-grid { width: 100%; max-width: 420px; display: grid; gap: 15px; }
+
+        .stat-card {
+            background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
+            border: 1px solid rgba(255,255,255,0.05);
+            border-radius: 28px; padding: 22px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+        }
+
+        .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 20px; }
+
+        .tir-container { display: flex; align-items: center; gap: 20px; }
+        .tir-chart {
+            width: 80px; height: 80px; border-radius: 50%;
+            background: conic-gradient(#00ffaa 0% var(--p), #333 var(--p) 100%);
+            display: flex; align-items: center; justify-content: center; position: relative;
+        }
+        .tir-chart::after { content: ""; position: absolute; width: 60px; height: 60px; background: #1e1e1e; border-radius: 50%; }
+        .tir-val { position: relative; z-index: 10; font-size: 1.4rem; font-weight: 900; color: #00ffaa; }
+
+        .bar-chart { 
+            display: flex; 
+            align-items: flex-end; 
+            gap: 10px; 
+            height: 130px; 
+            margin-top: 25px; 
+            padding-bottom: 20px; 
+        }
+        .bar { 
+            flex: 1; 
+            background: #007aff; 
+            border-radius: 6px 6px 2px 2px; 
+            position: relative; 
+            min-height: 5px; 
+            transition: height 0.5s ease;
+        }
+        
+        .bar-value {
+            position: absolute;
+            top: -22px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 0.7rem;
+            font-weight: 900;
+            color: #fff;
+            text-shadow: 0 0 10px rgba(0,0,0,0.5);
+        }
+
+        .bar-label { 
+            position: absolute; 
+            bottom: -22px; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 0.6rem; 
+            color: #fff; 
+            font-weight: 800; 
+            text-transform: uppercase; 
+            white-space: nowrap;
+        }
+
+        .big-val { font-size: 2.4rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+        .sub-label { font-size: 0.65rem; color: #777; font-weight: 700; text-transform: uppercase; }
+
+        .back-nav { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 1000;}
+        .back-btn { background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #fff; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; padding: 16px 40px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; }
+    </style>
+</head>
+<body>
+
+    <h1>STATS</h1>
+    <div class="divider"></div>
+
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div style="display: flex; justify-content: space-between;">
+                <div>
+                    <div class="card-title">Est. HbA1c</div>
+                    <div class="big-val" id="hba1c-val" style="color: #fff;">--</div>
+                    <div class="sub-label">90 Day projection</div>
+                </div>
+                <div style="text-align: right;">
+                    <div class="card-title">Avg Glucose</div>
+                    <div class="big-val" id="avg-val" style="color: #ff9500;">--</div>
+                    <div class="sub-label">mg/dL</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-title">Time In Range (70-180)</div>
+            <div class="tir-container">
+                <div class="tir-chart" id="tir-pie">
+                    <span class="tir-val" id="tir-percent">0%</span>
+                </div>
+                <div>
+                    <p style="font-size: 0.9rem; font-weight: 800; margin-bottom: 5px;" id="tir-status">Analyzing data...</p>
+                    <p style="font-size: 0.65rem; color: #888; line-height: 1.4;">Based on all sensor and meter logs recorded.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-title">7-Day Avg by Category</div>
+            <div class="bar-chart" id="category-bars"></div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-title">Last 7 Days (Avg)</div>
+            <div class="bar-chart" id="weekly-bars"></div>
+        </div>
+    </div>
+
+    <div class="back-nav"><a href="./index.html" class="back-btn">← Home</a></div>
+
+    <script>
+        function getLogs() {
+            return JSON.parse(localStorage.getItem('user_logs') || '[]');
+        }
+
+        function calculateStats() {
+            const logs = getLogs().filter(l => l.glucose !== '--');
+            if (logs.length === 0) return;
+
+            const values = logs.map(l => parseFloat(l.glucose));
+            
+            const avg = values.reduce((a, b) => a + b, 0) / values.length;
+            const hba1c = (avg + 46.7) / 28.7; 
+            
+            document.getElementById('avg-val').innerText = Math.round(avg);
+            document.getElementById('hba1c-val').innerText = hba1c.toFixed(1) + "%";
+
+            const inRange = values.filter(v => v >= 70 && v <= 180).length;
+            const tir = Math.round((inRange / values.length) * 100);
+            document.getElementById('tir-percent').innerText = tir + "%";
+            document.getElementById('tir-pie').style.setProperty('--p', tir + '%');
+            document.getElementById('tir-status').innerText = tir > 70 ? "Excellent Control" : "Keep Monitoring";
+
+            renderWeeklyChart(logs);
+            renderCategoryChart(logs);
+        }
+
+        function renderWeeklyChart(logs) {
+            const container = document.getElementById('weekly-bars');
+            container.innerHTML = '';
+            
+            const days = [];
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                days.push(d.toISOString().split('T')[0]);
+            }
+
+            days.forEach(day => {
+                const dayLogs = logs.filter(l => l.timestamp.startsWith(day));
+                const dayAvg = dayLogs.length > 0 
+                    ? dayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / dayLogs.length 
+                    : 0;
+                
+                const height = Math.min((dayAvg / 300) * 100, 100);
+                const bar = createBar(height, dayAvg, day.split('-')[2]);
+                container.appendChild(bar);
+            });
+        }
+
+        function renderCategoryChart(logs) {
+            const container = document.getElementById('category-bars');
+            container.innerHTML = '';
+            
+            // Get date string for 7 days ago
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+
+            const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+
+            categories.forEach(cat => {
+                // Filter logs for this category AND only from the last 7 days
+                const catLogs = logs.filter(l => l.category === cat && l.timestamp >= sevenDaysAgoStr);
+                const catAvg = catLogs.length > 0 
+                    ? catLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / catLogs.length 
+                    : 0;
+                
+                const height = Math.min((catAvg / 300) * 100, 100);
+                const shortLabel = cat === 'Breakfast' ? 'BRK' : cat === 'Snacks' ? 'SNK' : cat.slice(0, 3);
+                const bar = createBar(height, catAvg, shortLabel);
+                container.appendChild(bar);
+            });
+        }
+
+        function createBar(height, value, labelText) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.height = height + '%';
+            
+            if (value > 180) bar.style.backgroundColor = '#ff4d4d'; 
+            else if (value < 70 && value > 0) bar.style.backgroundColor = '#ffcc00'; 
+            else if (value > 0) bar.style.backgroundColor = '#00ffaa'; 
+            else bar.style.backgroundColor = '#333'; 
+
+            if (value > 0) {
+                const valLabel = document.createElement('span');
+                valLabel.className = 'bar-value';
+                valLabel.innerText = Math.round(value);
+                bar.appendChild(valLabel);
+            }
+
+            const label = document.createElement('span');
+            label.className = 'bar-label';
+            label.innerText = labelText;
+
+            bar.appendChild(label);
+            return bar;
+        }
+
+        calculateStats();
+    </script>
+</body>
+</html>
