@@ -163,19 +163,39 @@
             container.innerHTML = ''; 
             const now = new Date();
 
-            // Weekly Backup Reminder Logic
-            const lastBackup = localStorage.getItem('last_backup_date');
-            const oneWeek = 7 * 24 * 60 * 60 * 1000; // 7 days in ms
+            // 1. MONITORING ALERT: 4-Hour Stale Check
+            const rawLogs = localStorage.getItem('user_logs');
+            let logs = rawLogs ? JSON.parse(rawLogs) : [];
+            logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+            const lastReading = logs.find(l => l.glucose && l.glucose !== '--');
             
+            if (lastReading) {
+                const lastTime = new Date(lastReading.timestamp).getTime();
+                const diff = now.getTime() - lastTime;
+                const fourHoursInMs = 4 * 60 * 60 * 1000;
+                
+                if (diff > fourHoursInMs) {
+                    addAlert(
+                        "Monitoring Alert", 
+                        "Last test taken since 4 hours before.. please do often to maintain glucose in range",
+                        "🩸", 
+                        "theme-yellow",
+                        "./log.html"
+                    );
+                }
+            }
+
+            // 2. Weekly Backup Reminder
+            const lastBackup = localStorage.getItem('last_backup_date');
+            const oneWeek = 7 * 24 * 60 * 60 * 1000; 
             if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > oneWeek) {
                 addAlert("Security Alert", "Backup Due (7 Days Since Last)", "💾", "theme-blue", "javascript:exportData()");
             }
 
+            // 3. Basal Timer Logic
             const bTime = localStorage.getItem('user_basal_time') || "22:00"; 
             const todayStr = now.toISOString().split('T')[0];
             const target = new Date(todayStr + 'T' + bTime).getTime();
-            
-            const logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
             const taken = logs.some(l => l.category === 'Daily Basal' && l.timestamp.startsWith(todayStr));
             
             const basalEl = document.getElementById('mini-basal-timer');
@@ -185,19 +205,20 @@
                 basalEl.innerText = "DONE";
                 basalStatusEl.innerText = "Injection Recorded";
             } else {
-                const diff = target - now.getTime();
-                if (diff <= 0) {
+                const diffB = target - now.getTime();
+                if (diffB <= 0) {
                     basalEl.innerText = "DUE";
                     basalStatusEl.innerText = "Time to Inject";
                     addAlert("Injection Due", `Missed Basal Time (${format12h(bTime)})`, "💉", "theme-blue", "./log.html");
                 } else {
-                    const h = Math.floor(diff / 3600000);
-                    const m = Math.floor((diff % 3600000) / 60000);
+                    const h = Math.floor(diffB / 3600000);
+                    const m = Math.floor((diffB % 3600000) / 60000);
                     basalEl.innerText = `${h}h ${m}m`;
                     basalStatusEl.innerText = "Remaining";
                 }
             }
 
+            // 4. Stock Empty/Low Alerts
             const categories = [
                 { key: 'needle_common', label: 'Needles', defLow: 5 },
                 { key: 'rc', label: 'Rapid Cartridges', defLow: 3 },
@@ -213,10 +234,17 @@
                 else if (stock <= lowLimit) addAlert("Low Stock", `${cat.label}: ${stock}`, "⚠️", "theme-yellow", "./supply.html");
             });
 
-            ['rn', 'bn', 'lc'].forEach(key => {
-                const expiry = localStorage.getItem(key + '_expiry');
+            // 5. Specific Component Expiry Alerts
+            const components = [
+                { key: 'rn', label: 'Rapid Needle' },
+                { key: 'bn', label: 'Basal Needle' },
+                { key: 'lc', label: 'Lancet' }
+            ];
+
+            components.forEach(comp => {
+                const expiry = localStorage.getItem(comp.key + '_expiry');
                 if (expiry && now.getTime() >= parseInt(expiry)) {
-                    addAlert("Action Needed", "Change Component Now", "⏰", "theme-red", "./supply.html");
+                    addAlert("Action Needed", `${comp.label} Expired`, "⏰", "theme-red", "./supply.html");
                 }
             });
         }
@@ -284,8 +312,6 @@
             a.href = URL.createObjectURL(new Blob([JSON.stringify(allData)], { type: 'application/json' }));
             a.download = `Backup_${new Date().toISOString().split('T')[0]}.json`;
             a.click();
-            
-            // RESET BACKUP TIMER
             localStorage.setItem('last_backup_date', Date.now().toString());
             refreshAlerts();
         }
