@@ -33,7 +33,6 @@
 
         .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; }
 
-        /* STAR RATING STYLES */
         .star-container { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
         .stars { display: flex; gap: 4px; font-size: 1.8rem; color: #333; }
         .star-active { color: #00ffaa; text-shadow: 0 0 10px rgba(0, 255, 170, 0.3); }
@@ -41,42 +40,59 @@
         .tir-info p { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
         .tir-info span { font-size: 0.65rem; color: #666; font-weight: 700; text-transform: uppercase; }
 
+        /* EQUAL SPACE BAR CHART STYLES */
         .bar-chart { 
             display: flex; 
             align-items: flex-end; 
-            gap: 6px; 
-            height: 130px; 
+            justify-content: space-between;
+            gap: 8px; 
+            height: 140px; 
             margin-top: 25px; 
-            padding-bottom: 20px; 
+            padding-bottom: 25px; 
+            width: 100%;
+        }
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100%;
+            position: relative;
+        }
+        .bar-pair {
+            display: flex;
+            align-items: flex-end;
+            gap: 2px;
+            height: 100%;
+            width: 100%;
+            justify-content: center;
         }
         .bar { 
             flex: 1; 
             background: #007aff; 
-            border-radius: 4px 4px 2px 2px; 
+            border-radius: 3px 3px 1px 1px; 
             position: relative; 
-            min-height: 5px; 
+            min-height: 2px; 
             transition: height 0.5s ease;
+            width: 100%;
         }
-        
         .bar-value {
             position: absolute;
-            top: -22px;
+            top: -18px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 0.55rem;
+            font-size: 0.5rem;
             font-weight: 900;
             color: #fff;
         }
-
-        .bar-label { 
+        .group-label { 
             position: absolute; 
-            bottom: -22px; 
-            left: 50%; 
-            transform: translateX(-50%); 
+            bottom: -20px; 
             font-size: 0.5rem; 
             color: #666; 
             font-weight: 800; 
             text-transform: uppercase; 
+            white-space: nowrap;
         }
 
         .big-val { font-size: 2.4rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
@@ -96,7 +112,7 @@
             <div style="display: flex; justify-content: space-between;">
                 <div>
                     <div class="card-title">Est. HbA1c</div>
-                    <div class="big-val" id="hba1c-val" style="color: #fff;">--</div>
+                    <div class="big-val" id="hba1c-val">--</div>
                     <div class="sub-label">90 Day projection</div>
                 </div>
                 <div style="text-align: right;">
@@ -121,7 +137,7 @@
         </div>
 
         <div class="stat-card">
-            <div class="card-title">7-Day Avg by Category</div>
+            <div class="card-title">7-Day Avg by Meal</div>
             <div class="bar-chart" id="category-bars"></div>
         </div>
 
@@ -134,133 +150,103 @@
     <div class="back-nav"><a href="./index.html" class="back-btn">← Home</a></div>
 
     <script>
-        function getLogs() {
-            return JSON.parse(localStorage.getItem('user_logs') || '[]');
-        }
+        function getLogs() { return JSON.parse(localStorage.getItem('user_logs') || '[]'); }
 
         function calculateStats() {
             const logs = getLogs().filter(l => l.glucose !== '--');
             if (logs.length === 0) return;
-
             const values = logs.map(l => parseFloat(l.glucose));
-            
             const avg = values.reduce((a, b) => a + b, 0) / values.length;
-            const hba1c = (avg + 46.7) / 28.7; 
-            
             document.getElementById('avg-val').innerText = Math.round(avg);
-            document.getElementById('hba1c-val').innerText = hba1c.toFixed(1) + "%";
+            document.getElementById('hba1c-val').innerText = ((avg + 46.7) / 28.7).toFixed(1) + "%";
 
-            // TIR Calculation
             const inRange = values.filter(v => v >= 70 && v <= 180).length;
-            const tir = Math.round((inRange / values.length) * 100);
-            
-            updateStarRating(tir);
-            
+            updateStarRating(Math.round((inRange / values.length) * 100));
             renderWeeklyChart(logs);
             renderCategoryChart(logs);
         }
 
         function updateStarRating(tir) {
             const stars = document.getElementById('star-rating').children;
-            const statusEl = document.getElementById('tir-status');
-            const percentEl = document.getElementById('tir-percent');
-            
-            percentEl.innerText = tir + "% TIME IN RANGE";
-            
-            // Logic: 1 star for every 20%
+            document.getElementById('tir-percent').innerText = tir + "% TIME IN RANGE";
             let starCount = Math.ceil(tir / 20);
-            if (tir === 0) starCount = 0;
-
             for (let i = 0; i < 5; i++) {
-                if (i < starCount) stars[i].classList.add('star-active');
-                else stars[i].classList.remove('star-active');
+                stars[i].className = i < starCount ? 'star-active' : '';
             }
+            document.getElementById('tir-status').innerText = tir >= 70 ? "Good Control" : "Needs Attention";
+        }
 
-            if (tir >= 90) statusEl.innerText = "Excellent Control";
-            else if (tir >= 70) statusEl.innerText = "Good Control";
-            else if (tir >= 50) statusEl.innerText = "Moderate Control";
-            else statusEl.innerText = "Needs Attention";
+        function createSingleBar(value) {
+            const bar = document.createElement('div');
+            bar.className = 'bar';
+            bar.style.height = value > 0 ? Math.min((value / 300) * 100, 100) + '%' : '2px';
+            bar.style.backgroundColor = value > 180 ? '#ff4d4d' : value < 70 && value > 0 ? '#ffcc00' : value > 0 ? '#00ffaa' : '#333';
+            if (value > 0) {
+                const span = document.createElement('span');
+                span.className = 'bar-value';
+                span.innerText = Math.round(value);
+                bar.appendChild(span);
+            }
+            return bar;
         }
 
         function renderWeeklyChart(logs) {
             const container = document.getElementById('weekly-bars');
             container.innerHTML = '';
-            
-            const days = [];
             for (let i = 6; i >= 0; i--) {
-                const d = new Date();
-                d.setDate(d.getDate() - i);
-                days.push(d.toISOString().split('T')[0]);
-            }
-
-            days.forEach(day => {
-                const dayLogs = logs.filter(l => l.timestamp.startsWith(day));
-                const dayAvg = dayLogs.length > 0 
-                    ? dayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / dayLogs.length 
-                    : 0;
+                const d = new Date(); d.setDate(d.getDate() - i);
+                const dayStr = d.toISOString().split('T')[0];
+                const dayLogs = logs.filter(l => l.timestamp.startsWith(dayStr));
+                const avg = dayLogs.length > 0 ? dayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / dayLogs.length : 0;
                 
-                const height = Math.min((dayAvg / 300) * 100, 100);
-                const bar = createBar(height, dayAvg, day.split('-')[2]);
-                container.appendChild(bar);
-            });
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'bar-group';
+                const pairDiv = document.createElement('div');
+                pairDiv.className = 'bar-pair';
+                pairDiv.appendChild(createSingleBar(avg));
+                groupDiv.appendChild(pairDiv);
+                
+                const label = document.createElement('span');
+                label.className = 'group-label';
+                label.innerText = dayStr.split('-')[2];
+                groupDiv.appendChild(label);
+                container.appendChild(groupDiv);
+            }
         }
 
         function renderCategoryChart(logs) {
             const container = document.getElementById('category-bars');
             container.innerHTML = '';
-            
-            const sevenDaysAgo = new Date();
-            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-            const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
+            const sevenDaysAgoStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
 
-            const categories = [
-                { full: 'Early Morning', short: 'EM' },
-                { full: 'Pre Breakfast', short: 'PRB' },
-                { full: 'Post Breakfast', short: 'POB' },
-                { full: 'Pre Lunch', short: 'PRL' },
-                { full: 'Post Lunch', short: 'POL' },
-                { full: 'Pre Snack', short: 'PRS' },
-                { full: 'Post Snack', short: 'POS' },
-                { full: 'Pre Dinner', short: 'PRD' },
-                { full: 'Post Dinner', short: 'POD' },
-                { full: 'Bed Time', short: 'BT' }
+            const groups = [
+                { label: 'Morning', keys: ['Early Morning'] },
+                { label: 'Breakfast', keys: ['Pre Breakfast', 'Post Breakfast'] },
+                { label: 'Lunch', keys: ['Pre Lunch', 'Post Lunch'] },
+                { label: 'Snack', keys: ['Pre Snack', 'Post Snack'] },
+                { label: 'Dinner', keys: ['Pre Dinner', 'Post Dinner'] },
+                { label: 'Bed', keys: ['Bed Time'] }
             ];
 
-            categories.forEach(cat => {
-                const catLogs = logs.filter(l => l.category === cat.full && l.timestamp >= sevenDaysAgoStr);
-                const catAvg = catLogs.length > 0 
-                    ? catLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / catLogs.length 
-                    : 0;
-                
-                const height = Math.min((catAvg / 300) * 100, 100);
-                const bar = createBar(height, catAvg, cat.short);
-                container.appendChild(bar);
+            groups.forEach(g => {
+                const groupDiv = document.createElement('div');
+                groupDiv.className = 'bar-group';
+                const pairDiv = document.createElement('div');
+                pairDiv.className = 'bar-pair';
+
+                g.keys.forEach(key => {
+                    const catLogs = logs.filter(l => l.category === key && l.timestamp >= sevenDaysAgoStr);
+                    const avg = catLogs.length > 0 ? catLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / catLogs.length : 0;
+                    pairDiv.appendChild(createSingleBar(avg));
+                });
+
+                groupDiv.appendChild(pairDiv);
+                const label = document.createElement('span');
+                label.className = 'group-label';
+                label.innerText = g.label;
+                groupDiv.appendChild(label);
+                container.appendChild(groupDiv);
             });
-        }
-
-        function createBar(height, value, labelText) {
-            const bar = document.createElement('div');
-            bar.className = 'bar';
-            bar.style.height = height + '%';
-            
-            if (value > 180) bar.style.backgroundColor = '#ff4d4d'; 
-            else if (value < 70 && value > 0) bar.style.backgroundColor = '#ffcc00'; 
-            else if (value > 0) bar.style.backgroundColor = '#00ffaa'; 
-            else bar.style.backgroundColor = '#333'; 
-
-            if (value > 0) {
-                const valLabel = document.createElement('span');
-                valLabel.className = 'bar-value';
-                valLabel.innerText = Math.round(value);
-                bar.appendChild(valLabel);
-            }
-
-            const label = document.createElement('span');
-            label.className = 'bar-label';
-            label.innerText = labelText;
-
-            bar.appendChild(label);
-            return bar;
         }
 
         calculateStats();
