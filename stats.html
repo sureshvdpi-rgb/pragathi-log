@@ -31,21 +31,20 @@
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
         }
 
-        .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 20px; }
+        .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; }
 
-        .tir-container { display: flex; align-items: center; gap: 20px; }
-        .tir-chart {
-            width: 80px; height: 80px; border-radius: 50%;
-            background: conic-gradient(#00ffaa 0% var(--p), #333 var(--p) 100%);
-            display: flex; align-items: center; justify-content: center; position: relative;
-        }
-        .tir-chart::after { content: ""; position: absolute; width: 60px; height: 60px; background: #1e1e1e; border-radius: 50%; }
-        .tir-val { position: relative; z-index: 10; font-size: 1.4rem; font-weight: 900; color: #00ffaa; }
+        /* STAR RATING STYLES */
+        .star-container { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
+        .stars { display: flex; gap: 4px; font-size: 1.8rem; color: #333; }
+        .star-active { color: #00ffaa; text-shadow: 0 0 10px rgba(0, 255, 170, 0.3); }
+        .tir-info { flex: 1; }
+        .tir-info p { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
+        .tir-info span { font-size: 0.65rem; color: #666; font-weight: 700; text-transform: uppercase; }
 
         .bar-chart { 
             display: flex; 
             align-items: flex-end; 
-            gap: 10px; 
+            gap: 6px; 
             height: 130px; 
             margin-top: 25px; 
             padding-bottom: 20px; 
@@ -53,7 +52,7 @@
         .bar { 
             flex: 1; 
             background: #007aff; 
-            border-radius: 6px 6px 2px 2px; 
+            border-radius: 4px 4px 2px 2px; 
             position: relative; 
             min-height: 5px; 
             transition: height 0.5s ease;
@@ -64,10 +63,9 @@
             top: -22px;
             left: 50%;
             transform: translateX(-50%);
-            font-size: 0.7rem;
+            font-size: 0.55rem;
             font-weight: 900;
             color: #fff;
-            text-shadow: 0 0 10px rgba(0,0,0,0.5);
         }
 
         .bar-label { 
@@ -75,11 +73,10 @@
             bottom: -22px; 
             left: 50%; 
             transform: translateX(-50%); 
-            font-size: 0.6rem; 
-            color: #fff; 
+            font-size: 0.5rem; 
+            color: #666; 
             font-weight: 800; 
             text-transform: uppercase; 
-            white-space: nowrap;
         }
 
         .big-val { font-size: 2.4rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
@@ -112,13 +109,13 @@
 
         <div class="stat-card">
             <div class="card-title">Time In Range (70-180)</div>
-            <div class="tir-container">
-                <div class="tir-chart" id="tir-pie">
-                    <span class="tir-val" id="tir-percent">0%</span>
+            <div class="star-container">
+                <div class="stars" id="star-rating">
+                    <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
                 </div>
-                <div>
-                    <p style="font-size: 0.9rem; font-weight: 800; margin-bottom: 5px;" id="tir-status">Analyzing data...</p>
-                    <p style="font-size: 0.65rem; color: #888; line-height: 1.4;">Based on all sensor and meter logs recorded.</p>
+                <div class="tir-info">
+                    <p id="tir-status">Analyzing...</p>
+                    <span id="tir-percent">0% TIR</span>
                 </div>
             </div>
         </div>
@@ -153,14 +150,36 @@
             document.getElementById('avg-val').innerText = Math.round(avg);
             document.getElementById('hba1c-val').innerText = hba1c.toFixed(1) + "%";
 
+            // TIR Calculation
             const inRange = values.filter(v => v >= 70 && v <= 180).length;
             const tir = Math.round((inRange / values.length) * 100);
-            document.getElementById('tir-percent').innerText = tir + "%";
-            document.getElementById('tir-pie').style.setProperty('--p', tir + '%');
-            document.getElementById('tir-status').innerText = tir > 70 ? "Excellent Control" : "Keep Monitoring";
-
+            
+            updateStarRating(tir);
+            
             renderWeeklyChart(logs);
             renderCategoryChart(logs);
+        }
+
+        function updateStarRating(tir) {
+            const stars = document.getElementById('star-rating').children;
+            const statusEl = document.getElementById('tir-status');
+            const percentEl = document.getElementById('tir-percent');
+            
+            percentEl.innerText = tir + "% TIME IN RANGE";
+            
+            // Logic: 1 star for every 20%
+            let starCount = Math.ceil(tir / 20);
+            if (tir === 0) starCount = 0;
+
+            for (let i = 0; i < 5; i++) {
+                if (i < starCount) stars[i].classList.add('star-active');
+                else stars[i].classList.remove('star-active');
+            }
+
+            if (tir >= 90) statusEl.innerText = "Excellent Control";
+            else if (tir >= 70) statusEl.innerText = "Good Control";
+            else if (tir >= 50) statusEl.innerText = "Moderate Control";
+            else statusEl.innerText = "Needs Attention";
         }
 
         function renderWeeklyChart(logs) {
@@ -190,23 +209,31 @@
             const container = document.getElementById('category-bars');
             container.innerHTML = '';
             
-            // Get date string for 7 days ago
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
             const sevenDaysAgoStr = sevenDaysAgo.toISOString().split('T')[0];
 
-            const categories = ['Breakfast', 'Lunch', 'Snacks', 'Dinner'];
+            const categories = [
+                { full: 'Early Morning', short: 'EM' },
+                { full: 'Pre Breakfast', short: 'PRB' },
+                { full: 'Post Breakfast', short: 'POB' },
+                { full: 'Pre Lunch', short: 'PRL' },
+                { full: 'Post Lunch', short: 'POL' },
+                { full: 'Pre Snack', short: 'PRS' },
+                { full: 'Post Snack', short: 'POS' },
+                { full: 'Pre Dinner', short: 'PRD' },
+                { full: 'Post Dinner', short: 'POD' },
+                { full: 'Bed Time', short: 'BT' }
+            ];
 
             categories.forEach(cat => {
-                // Filter logs for this category AND only from the last 7 days
-                const catLogs = logs.filter(l => l.category === cat && l.timestamp >= sevenDaysAgoStr);
+                const catLogs = logs.filter(l => l.category === cat.full && l.timestamp >= sevenDaysAgoStr);
                 const catAvg = catLogs.length > 0 
                     ? catLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / catLogs.length 
                     : 0;
                 
                 const height = Math.min((catAvg / 300) * 100, 100);
-                const shortLabel = cat === 'Breakfast' ? 'BRK' : cat === 'Snacks' ? 'SNK' : cat.slice(0, 3);
-                const bar = createBar(height, catAvg, shortLabel);
+                const bar = createBar(height, catAvg, cat.short);
                 container.appendChild(bar);
             });
         }

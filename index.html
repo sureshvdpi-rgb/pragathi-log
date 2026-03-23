@@ -24,7 +24,14 @@
             line-height: 1; cursor: pointer;
         }
         .age-line { font-size: 0.8rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; cursor: pointer; }
-        .divider { width: 40px; height: 4px; background-color: #fff; margin: 10px auto; border-radius: 10px; opacity: 0.8; }
+        
+        /* DASHBOARD STARS */
+        #dashboard-stars { 
+            display: flex; justify-content: center; gap: 5px; margin-top: 10px; cursor: pointer;
+        }
+        #dashboard-stars span { font-size: 1.4rem; color: #333; transition: 0.3s; }
+
+        .divider { width: 40px; height: 4px; background-color: #fff; margin: 15px auto; border-radius: 10px; opacity: 0.8; }
 
         /* ALERT SYSTEM */
         #alert-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
@@ -68,6 +75,11 @@
     <div class="container">
         <h1 id="user-name" onclick="editName()">Pragathi Suresh</h1>
         <div id="age-display" class="age-line" onclick="triggerAgePicker()">Set Age</div>
+        
+        <div id="dashboard-stars" onclick="location.href='./stats.html'">
+            <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+        </div>
+
         <input type="date" id="birthdate-picker" style="display:none;" onchange="updateAge(this.value)">
         <div class="divider"></div>
     </div>
@@ -163,84 +175,56 @@
             container.innerHTML = ''; 
             const now = new Date();
 
-            // 1. MONITORING ALERT: 4-Hour Stale Check
             const rawLogs = localStorage.getItem('user_logs');
             let logs = rawLogs ? JSON.parse(rawLogs) : [];
             logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-            const lastReading = logs.find(l => l.glucose && l.glucose !== '--');
             
+            // 1. Glucose Monitoring Alert
+            const lastReading = logs.find(l => l.glucose && l.glucose !== '--');
             if (lastReading) {
                 const lastTime = new Date(lastReading.timestamp).getTime();
                 const diff = now.getTime() - lastTime;
-                const fourHoursInMs = 4 * 60 * 60 * 1000;
-                
-                if (diff > fourHoursInMs) {
-                    addAlert(
-                        "Monitoring Alert", 
-                        "Last test taken since 4 hours before.. please do often to maintain glucose in range",
-                        "🩸", 
-                        "theme-yellow",
-                        "./log.html"
-                    );
+                if (diff > (4 * 60 * 60 * 1000)) {
+                    addAlert("Monitoring Alert", "No test in 4+ hours", "🩸", "theme-yellow", "./log.html");
                 }
             }
 
             // 2. Weekly Backup Reminder
             const lastBackup = localStorage.getItem('last_backup_date');
-            const oneWeek = 7 * 24 * 60 * 60 * 1000; 
-            if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > oneWeek) {
-                addAlert("Security Alert", "Backup Due (7 Days Since Last)", "💾", "theme-blue", "javascript:exportData()");
+            if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > (7 * 24 * 60 * 60 * 1000)) {
+                addAlert("Security Alert", "Backup Due", "💾", "theme-blue", "javascript:exportData()");
             }
 
-            // 3. Basal Timer Logic
+            // 3. Basal Reminder
             const bTime = localStorage.getItem('user_basal_time') || "22:00"; 
             const todayStr = now.toISOString().split('T')[0];
             const target = new Date(todayStr + 'T' + bTime).getTime();
             const taken = logs.some(l => l.category === 'Daily Basal' && l.timestamp.startsWith(todayStr));
-            
-            const basalEl = document.getElementById('mini-basal-timer');
-            const basalStatusEl = document.getElementById('mini-basal-status');
-            
-            if (taken) {
-                basalEl.innerText = "DONE";
-                basalStatusEl.innerText = "Injection Recorded";
-            } else {
-                const diffB = target - now.getTime();
-                if (diffB <= 0) {
-                    basalEl.innerText = "DUE";
-                    basalStatusEl.innerText = "Time to Inject";
-                    addAlert("Injection Due", `Missed Basal Time (${format12h(bTime)})`, "💉", "theme-blue", "./log.html");
-                } else {
-                    const h = Math.floor(diffB / 3600000);
-                    const m = Math.floor((diffB % 3600000) / 60000);
-                    basalEl.innerText = `${h}h ${m}m`;
-                    basalStatusEl.innerText = "Remaining";
-                }
+            if (!taken && target - now.getTime() <= 0) {
+                addAlert("Injection Due", `Basal Due (${format12h(bTime)})`, "💉", "theme-blue", "./log.html");
             }
 
-            // 4. Stock Empty/Low Alerts
-            const categories = [
+            // 4. Low Stock Alerts
+            const stockItems = [
                 { key: 'needle_common', label: 'Needles', defLow: 5 },
                 { key: 'rc', label: 'Rapid Cartridges', defLow: 3 },
                 { key: 'bc', label: 'Basal Cartridges', defLow: 3 },
                 { key: 'strip', label: 'Test Strips', defLow: 10 },
                 { key: 'lancet', label: 'Lancets', defLow: 5 }
             ];
-
-            categories.forEach(cat => {
+            stockItems.forEach(cat => {
                 const stock = parseInt(localStorage.getItem(cat.key + '_stock') || 0);
-                const lowLimit = parseInt(localStorage.getItem(cat.key + '_low_alert') || cat.defLow);
+                const low = parseInt(localStorage.getItem(cat.key + '_low_alert') || cat.defLow);
                 if (stock === 0) addAlert("Stock Empty", `Buy ${cat.label}`, "📦", "theme-red", "./supply.html");
-                else if (stock <= lowLimit) addAlert("Low Stock", `${cat.label}: ${stock}`, "⚠️", "theme-yellow", "./supply.html");
+                else if (stock <= low) addAlert("Low Stock", `${cat.label}: ${stock}`, "⚠️", "theme-yellow", "./supply.html");
             });
 
-            // 5. Specific Component Expiry Alerts
+            // 5. RESTORED: Needle & Lancet Change Alerts
             const components = [
                 { key: 'rn', label: 'Rapid Needle' },
                 { key: 'bn', label: 'Basal Needle' },
                 { key: 'lc', label: 'Lancet' }
             ];
-
             components.forEach(comp => {
                 const expiry = localStorage.getItem(comp.key + '_expiry');
                 if (expiry && now.getTime() >= parseInt(expiry)) {
@@ -258,19 +242,44 @@
             container.appendChild(tile);
         }
 
+        function updateDashboardStars(logs) {
+            const stars = document.getElementById('dashboard-stars').children;
+            const allG = logs.filter(l => l.glucose && l.glucose !== '--');
+            if (allG.length === 0) return;
+
+            const sevenDaysAgo = new Date();
+            sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+            const weekLogs = allG.filter(l => new Date(l.timestamp) >= sevenDaysAgo);
+
+            if (weekLogs.length > 0) {
+                const inRange = weekLogs.filter(l => l.glucose >= 70 && l.glucose <= 180).length;
+                const tir = Math.round((inRange / weekLogs.length) * 100);
+                let starCount = Math.ceil(tir / 20);
+                for (let i = 0; i < 5; i++) {
+                    if (i < starCount) {
+                        stars[i].style.color = "#00ffaa";
+                        stars[i].style.textShadow = "0 0 8px rgba(0, 255, 170, 0.4)";
+                    } else {
+                        stars[i].style.color = "#333";
+                        stars[i].style.textShadow = "none";
+                    }
+                }
+            }
+        }
+
         function syncAllData() {
             const rawLogs = localStorage.getItem('user_logs');
             let logs = rawLogs ? JSON.parse(rawLogs) : [];
             
+            updateDashboardStars(logs);
+
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
                 if (last) {
                     document.getElementById('mini-last-bg').innerText = last.glucose;
                     const lastDate = new Date(last.timestamp);
-                    const dateStr = lastDate.toLocaleDateString([], { month: 'short', day: 'numeric' });
-                    const timeStr = lastDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    document.getElementById('mini-last-full-time').innerText = `${dateStr} • ${timeStr}`;
+                    document.getElementById('mini-last-full-time').innerText = `${lastDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} • ${lastDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
                 }
                 const today = new Date().toISOString().split('T')[0];
                 const todayLogs = logs.filter(l => l.timestamp.startsWith(today) && l.glucose !== '--');
@@ -282,16 +291,7 @@
                 const allG = logs.filter(l => l.glucose !== '--');
                 if (allG.length > 0) {
                     const avgAll = allG.reduce((s, c) => s + parseFloat(c.glucose), 0) / allG.length;
-                    const hba1cStr = ((avgAll + 46.7) / 28.7).toFixed(1) + "%";
-                    document.getElementById('mini-stat-hba1c').innerText = hba1cStr;
-                    const sevenDaysAgo = new Date();
-                    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
-                    const weekLogs = allG.filter(l => new Date(l.timestamp) >= sevenDaysAgo);
-                    if(weekLogs.length > 0) {
-                        const inRange = weekLogs.filter(l => l.glucose >= 70 && l.glucose <= 180).length;
-                        const tir = Math.round((inRange / weekLogs.length) * 100);
-                        document.getElementById('mini-stat-tir').innerText = tir + "%";
-                    }
+                    document.getElementById('mini-stat-hba1c').innerText = ((avgAll + 46.7) / 28.7).toFixed(1) + "%";
                 }
             }
             document.getElementById('mini-stock-needle').innerText = localStorage.getItem('needle_common_stock') || 0;
