@@ -80,8 +80,10 @@
         .supply-val { color: #00ffaa; }
         .stats-val { color: #007aff; }
 
+        /* UPDATED DATA CONTROLS */
         .data-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 420px; }
         .control-btn { background: #1a1a1a; border: 1px solid #333; color: #888; padding: 18px; border-radius: 24px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
+        .btn-report { grid-column: span 2; background: #007aff; color: #fff; border: none; }
         .btn-danger { grid-column: span 2; color: #ff4d4d; border-color: rgba(255, 77, 77, 0.1); }
     </style>
 </head>
@@ -145,6 +147,7 @@
     </div>
 
     <div class="data-controls">
+        <button class="control-btn btn-report" onclick="location.href='./report.html'">Generate Printable Report</button>
         <button class="control-btn" onclick="exportData()">Export Data</button>
         <button class="control-btn" onclick="document.getElementById('fileImport').click()">Import Data</button>
         <button class="control-btn btn-danger" onclick="clearAllData()">Clear All Data</button>
