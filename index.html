@@ -43,20 +43,37 @@
 
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* TILES */
+        /* ENHANCED TILES & 3D TRANSITIONS */
         .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 420px; margin-bottom: 15px; }
         .mini-tile {
             background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
             border: 1px solid rgba(255,255,255,0.05); border-radius: 24px;
             padding: 15px; text-align: center; text-decoration: none;
             height: 135px; display: flex; flex-direction: column; overflow: hidden; position: relative;
+            perspective: 1000px;
         }
         .tile-title { font-size: 0.75rem; color: #fff; text-transform: uppercase; font-weight: 900; letter-spacing: 2px; margin-bottom: 12px; opacity: 0.7; }
-        .data-slider { position: relative; flex-grow: 1; width: 100%; }
-        .slide { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; justify-content: center; align-items: center; opacity: 0; transform: translateY(20px); transition: all 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-        .slide.active { opacity: 1; transform: translateY(0); }
+        
+        .data-slider { position: relative; flex-grow: 1; width: 100%; transform-style: preserve-3d; }
+        
+        .slide { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            display: flex; flex-direction: column; justify-content: center; align-items: center; 
+            opacity: 0; 
+            filter: blur(10px);
+            transform: translateY(10px) rotateX(-15deg) scale(0.9); 
+            transition: all 0.7s cubic-bezier(0.34, 1.56, 0.64, 1); 
+            backface-visibility: hidden;
+        }
+        
+        .slide.active { 
+            opacity: 1; 
+            filter: blur(0px);
+            transform: translateY(0) rotateX(0deg) scale(1); 
+        }
+
         .slide h3 { font-size: 0.5rem; color: #666; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
-        .slide .main-val { font-size: 1.3rem; font-weight: 900; }
+        .slide .main-val { font-size: 1.3rem; font-weight: 900; text-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .slide .sub-text { font-size: 0.45rem; color: #444; font-weight: 700; margin-top: 1px; }
         
         .glucose-val { color: #ff9500; }
@@ -168,6 +185,25 @@
             return `${h}:${m} ${ampm}`;
         }
 
+        function calculateIOB(logs) {
+            const now = new Date().getTime();
+            const actionTime = 4 * 60 * 60 * 1000; 
+            let totalIOB = 0;
+
+            const recentInsulinLogs = logs.filter(l => {
+                const logTime = new Date(l.timestamp).getTime();
+                return l.category !== 'Daily Basal' && (now - logTime) < actionTime && l.insulin > 0;
+            });
+
+            recentInsulinLogs.forEach(l => {
+                const logTime = new Date(l.timestamp).getTime();
+                const timePassed = now - logTime;
+                const percentRemaining = 1 - (timePassed / actionTime);
+                totalIOB += l.insulin * percentRemaining;
+            });
+            return totalIOB;
+        }
+
         function refreshAlerts() {
             const container = document.getElementById('alert-container');
             container.innerHTML = ''; 
@@ -176,7 +212,13 @@
             let logs = rawLogs ? JSON.parse(rawLogs) : [];
             logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            // Basal Calculation for Dashboard Tile and Alert
+            // IOB Alert (Primary Alert)
+            const currentIOB = calculateIOB(logs);
+            if (currentIOB > 0) {
+                addAlert("Insulin on Board", `${currentIOB.toFixed(1)} Units Active (Rapid)`, "💉", "theme-red", "./log.html");
+            }
+
+            // Basal Logic
             const bTime = localStorage.getItem('user_basal_time') || "22:00"; 
             const todayStr = now.toISOString().split('T')[0];
             const target = new Date(todayStr + 'T' + bTime).getTime();
@@ -186,31 +228,34 @@
             const basalStatusEl = document.getElementById('mini-basal-status');
             
             if (taken) {
-                basalEl.innerText = "DONE";
-                basalStatusEl.innerText = "Injection Recorded";
+                if(basalEl) basalEl.innerText = "DONE";
+                if(basalStatusEl) basalStatusEl.innerText = "Injection Recorded";
             } else {
                 const diffB = target - now.getTime();
                 if (diffB <= 0) {
-                    basalEl.innerText = "DUE";
-                    basalStatusEl.innerText = "Time to Inject";
+                    if(basalEl) basalEl.innerText = "DUE";
+                    if(basalStatusEl) basalStatusEl.innerText = "Time to Inject";
                     addAlert("Injection Due", `Basal Due (${format12h(bTime)})`, "💉", "theme-blue", "./log.html");
                 } else {
                     const h = Math.floor(diffB / 3600000);
                     const m = Math.floor((diffB % 3600000) / 60000);
-                    basalEl.innerText = `${h}h ${m}m`;
-                    basalStatusEl.innerText = "Remaining";
+                    if(basalEl) basalEl.innerText = `${h}h ${m}m`;
+                    if(basalStatusEl) basalStatusEl.innerText = "Remaining";
                 }
             }
 
+            // Monitoring Alert
             const lastReading = logs.find(l => l.glucose && l.glucose !== '--');
             if (lastReading) {
                 const lastTime = new Date(lastReading.timestamp).getTime();
                 if (now.getTime() - lastTime > (4 * 60 * 60 * 1000)) addAlert("Monitoring Alert", "No test in 4+ hours", "🩸", "theme-yellow", "./log.html");
             }
 
+            // Backup Alert
             const lastBackup = localStorage.getItem('last_backup_date');
             if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > (7 * 24 * 60 * 60 * 1000)) addAlert("Security Alert", "Backup Due", "💾", "theme-blue", "javascript:exportData()");
 
+            // Stock Alerts
             const stockItems = [
                 { key: 'needle_common', label: 'Needles', defLow: 5 },
                 { key: 'rc', label: 'Rapid Cart.', defLow: 3 },
@@ -225,6 +270,7 @@
                 else if (stock <= low) addAlert("Low Stock", `${cat.label}: ${stock}`, "⚠️", "theme-yellow", "./supply.html");
             });
 
+            // Supply Expiry Alerts
             ['rn', 'bn', 'lc'].forEach(k => {
                 const exp = localStorage.getItem(k + '_expiry');
                 if (exp && now.getTime() >= parseInt(exp)) addAlert("Action Needed", `${k === 'lc' ? 'Lancet' : (k === 'rn' ? 'Rapid' : 'Basal') + ' Needle'} Expired`, "⏰", "theme-red", "./supply.html");
@@ -253,11 +299,14 @@
                 const inRange = weekLogs.filter(l => l.glucose >= 70 && l.glucose <= 180).length;
                 const tir = Math.round((inRange / weekLogs.length) * 100);
                 
+                // Update Star Rating
                 let starCount = Math.ceil(tir / 20);
                 for (let i = 0; i < 5; i++) {
                     stars[i].style.color = i < starCount ? "#00ffaa" : "#333";
                     stars[i].style.textShadow = i < starCount ? "0 0 8px rgba(0, 255, 170, 0.4)" : "none";
                 }
+                
+                // Update Time In Range text in Stats Tile
                 const tirEl = document.getElementById('mini-stat-tir');
                 if(tirEl) tirEl.innerText = tir + "%";
             }
@@ -270,30 +319,42 @@
 
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // Update Last Reading
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
                 if (last) {
                     document.getElementById('mini-last-bg').innerText = last.glucose;
                     const lastDate = new Date(last.timestamp);
                     document.getElementById('mini-last-full-time').innerText = `${lastDate.toLocaleDateString([], { month: 'short', day: 'numeric' })} • ${lastDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
                 }
+
+                // Update Today's Count and Average Glucose
                 const today = new Date().toISOString().split('T')[0];
                 const todayLogs = logs.filter(l => l.timestamp.startsWith(today) && l.glucose !== '--');
                 document.getElementById('mini-today-count').innerText = todayLogs.length;
+                
                 if (todayLogs.length > 0) {
-                    const avg = todayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / todayLogs.length;
-                    document.getElementById('mini-stat-avg').innerText = Math.round(avg);
+                    const avgToday = todayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / todayLogs.length;
+                    const avgEl = document.getElementById('mini-stat-avg');
+                    if(avgEl) avgEl.innerText = Math.round(avgToday);
                 }
+
+                // Update Estimated HbA1c
                 const allG = logs.filter(l => l.glucose !== '--');
                 if (allG.length > 0) {
                     const avgAll = allG.reduce((s, c) => s + parseFloat(c.glucose), 0) / allG.length;
-                    document.getElementById('mini-stat-hba1c').innerText = ((avgAll + 46.7) / 28.7).toFixed(1) + "%";
+                    const hba1cEl = document.getElementById('mini-stat-hba1c');
+                    if(hba1cEl) hba1cEl.innerText = ((avgAll + 46.7) / 28.7).toFixed(1) + "%";
                 }
             }
+
+            // Update Inventory Numbers
             document.getElementById('mini-stock-needle').innerText = localStorage.getItem('needle_common_stock') || 0;
             document.getElementById('mini-stock-rc').innerText = localStorage.getItem('rc_stock') || 0;
             document.getElementById('mini-stock-bc').innerText = localStorage.getItem('bc_stock') || 0;
             document.getElementById('mini-stock-strip').innerText = localStorage.getItem('strip_stock') || 0;
             document.getElementById('mini-stock-lancet').innerText = localStorage.getItem('lancet_stock') || 0;
+            
             refreshAlerts();
         }
 
