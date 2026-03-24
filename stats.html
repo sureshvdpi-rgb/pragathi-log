@@ -33,6 +33,46 @@
 
         .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; }
 
+        /* 3D PIE CHART STYLES */
+        .pie-wrapper {
+            position: relative;
+            width: 260px;
+            height: 260px;
+            margin: 20px auto;
+            perspective: 1000px;
+        }
+        .pie-chart {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            background: conic-gradient(#333 0% 100%);
+            position: relative;
+            /* 3D Lift Effect */
+            transform: rotateX(25deg);
+            box-shadow: 
+                0 15px 0 #000, 
+                0 20px 30px rgba(0,0,0,0.5);
+            transition: 0.5s ease;
+        }
+        .pie-labels-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            transform: rotateX(25deg); /* Match the chart tilt */
+        }
+        .pie-label {
+            position: absolute;
+            font-size: 0.55rem;
+            font-weight: 900;
+            color: #000;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            line-height: 1.1;
+            width: 80px;
+            text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+        }
+
+        /* STAR RATING */
         .star-container { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
         .stars { display: flex; gap: 4px; font-size: 1.8rem; color: #333; }
         .star-active { color: #00ffaa; text-shadow: 0 0 10px rgba(0, 255, 170, 0.3); }
@@ -40,60 +80,13 @@
         .tir-info p { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
         .tir-info span { font-size: 0.65rem; color: #666; font-weight: 700; text-transform: uppercase; }
 
-        /* EQUAL SPACE BAR CHART STYLES */
-        .bar-chart { 
-            display: flex; 
-            align-items: flex-end; 
-            justify-content: space-between;
-            gap: 8px; 
-            height: 140px; 
-            margin-top: 25px; 
-            padding-bottom: 25px; 
-            width: 100%;
-        }
-        .bar-group {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            height: 100%;
-            position: relative;
-        }
-        .bar-pair {
-            display: flex;
-            align-items: flex-end;
-            gap: 2px;
-            height: 100%;
-            width: 100%;
-            justify-content: center;
-        }
-        .bar { 
-            flex: 1; 
-            background: #007aff; 
-            border-radius: 3px 3px 1px 1px; 
-            position: relative; 
-            min-height: 2px; 
-            transition: height 0.5s ease;
-            width: 100%;
-        }
-        .bar-value {
-            position: absolute;
-            top: -18px;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 0.5rem;
-            font-weight: 900;
-            color: #fff;
-        }
-        .group-label { 
-            position: absolute; 
-            bottom: -20px; 
-            font-size: 0.5rem; 
-            color: #666; 
-            font-weight: 800; 
-            text-transform: uppercase; 
-            white-space: nowrap;
-        }
+        /* BAR CHART STYLES */
+        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 140px; margin-top: 25px; padding-bottom: 25px; width: 100%; }
+        .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
+        .bar-pair { display: flex; align-items: flex-end; gap: 2px; height: 100%; width: 100%; justify-content: center; }
+        .bar { flex: 1; background: #007aff; border-radius: 3px 3px 1px 1px; position: relative; min-height: 2px; transition: height 0.5s ease; width: 100%; }
+        .bar-value { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.5rem; font-weight: 900; color: #fff; }
+        .group-label { position: absolute; bottom: -20px; font-size: 0.5rem; color: #666; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
 
         .big-val { font-size: 2.4rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
         .sub-label { font-size: 0.65rem; color: #777; font-weight: 700; text-transform: uppercase; }
@@ -124,7 +117,7 @@
         </div>
 
         <div class="stat-card">
-            <div class="card-title">Time In Range (70-180)</div>
+            <div class="card-title">Time In Range Score</div>
             <div class="star-container">
                 <div class="stars" id="star-rating">
                     <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
@@ -133,6 +126,14 @@
                     <p id="tir-status">Analyzing...</p>
                     <span id="tir-percent">0% TIR</span>
                 </div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-title">Glucose Distribution</div>
+            <div class="pie-wrapper">
+                <div class="pie-chart" id="glucose-pie"></div>
+                <div class="pie-labels-container" id="pie-labels"></div>
             </div>
         </div>
 
@@ -156,14 +157,66 @@
             const logs = getLogs().filter(l => l.glucose !== '--');
             if (logs.length === 0) return;
             const values = logs.map(l => parseFloat(l.glucose));
+            
             const avg = values.reduce((a, b) => a + b, 0) / values.length;
             document.getElementById('avg-val').innerText = Math.round(avg);
             document.getElementById('hba1c-val').innerText = ((avg + 46.7) / 28.7).toFixed(1) + "%";
 
-            const inRange = values.filter(v => v >= 70 && v <= 180).length;
-            updateStarRating(Math.round((inRange / values.length) * 100));
+            const total = values.length;
+            const counts = {
+                low: values.filter(v => v < 70).length,
+                tir: values.filter(v => v >= 70 && v <= 180).length,
+                high: values.filter(v => v > 180 && v <= 240).length,
+                vhigh: values.filter(v => v > 240).length
+            };
+
+            updatePieChart(counts, total);
+            updateStarRating(Math.round((counts.tir / total) * 100));
             renderWeeklyChart(logs);
             renderCategoryChart(logs);
+        }
+
+        function updatePieChart(counts, total) {
+            const data = [
+                { label: 'LOW', range: '<70', val: counts.low, color: '#ffcc00' },
+                { label: 'IN RANGE', range: '70-180', val: counts.tir, color: '#00ffaa' },
+                { label: 'ELEVATED', range: '181-240', val: counts.high, color: '#ff9500' },
+                { label: 'HIGH', range: '>240', val: counts.vhigh, color: '#ff4d4d' }
+            ];
+
+            let currentPercent = 0;
+            let gradientStr = "conic-gradient(";
+            const labelContainer = document.getElementById('pie-labels');
+            labelContainer.innerHTML = '';
+
+            data.forEach((item, index) => {
+                const percent = (item.val / total) * 100;
+                if (percent > 0) {
+                    const start = currentPercent;
+                    const end = currentPercent + percent;
+                    gradientStr += `${item.color} ${start}% ${end}%${index < data.length - 1 ? ',' : ''}`;
+                    
+                    // Logic to position labels in the middle of segments
+                    if (percent > 8) { 
+                        const midAngle = ((start + (percent / 2)) / 100) * 2 * Math.PI - (Math.PI / 2);
+                        const radius = 75; 
+                        const x = 130 + radius * Math.cos(midAngle);
+                        const y = 130 + radius * Math.sin(midAngle);
+                        
+                        const label = document.createElement('div');
+                        label.className = 'pie-label';
+                        label.style.left = x + 'px';
+                        label.style.top = y + 'px';
+                        label.innerHTML = `${item.label}<br>(${item.range})<br>${Math.round(percent)}%`;
+                        labelContainer.appendChild(label);
+                    }
+                    currentPercent = end;
+                }
+            });
+
+            if (currentPercent === 0) gradientStr += "#333 0% 100%";
+            gradientStr += ")";
+            document.getElementById('glucose-pie').style.background = gradientStr;
         }
 
         function updateStarRating(tir) {
@@ -180,7 +233,7 @@
             const bar = document.createElement('div');
             bar.className = 'bar';
             bar.style.height = value > 0 ? Math.min((value / 300) * 100, 100) + '%' : '2px';
-            bar.style.backgroundColor = value > 180 ? '#ff4d4d' : value < 70 && value > 0 ? '#ffcc00' : value > 0 ? '#00ffaa' : '#333';
+            bar.style.backgroundColor = value > 240 ? '#ff4d4d' : value > 180 ? '#ff9500' : (value < 70 && value > 0 ? '#ffcc00' : (value > 0 ? '#00ffaa' : '#333'));
             if (value > 0) {
                 const span = document.createElement('span');
                 span.className = 'bar-value';
