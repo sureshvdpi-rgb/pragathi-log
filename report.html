@@ -2,116 +2,206 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Clinical Glucose Report</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Clinical Report</title>
     <style>
-        body { font-family: -apple-system, sans-serif; padding: 10px; color: #000; background: #fff; }
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
-        .no-print { 
-            background: #f4f4f4; padding: 15px; border-radius: 8px; margin-bottom: 20px;
-            display: flex; flex-direction: column; gap: 10px;
+        body { 
+            background-color: #0f0f0f; 
+            color: #ffffff; 
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif; 
+            display: flex; flex-direction: column; align-items: center; min-height: 100vh; padding: 15px; padding-bottom: 40px;
         }
-        .filter-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
-        .filter-row label { font-size: 0.7rem; font-weight: bold; text-transform: uppercase; color: #444; }
-        .filter-row input, .filter-row select { padding: 8px; border: 1px solid #ccc; border-radius: 5px; font-family: inherit; font-size: 0.8rem; }
+
+        /* HEADER */
+        h1 { 
+            font-size: 2.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px; 
+            background: linear-gradient(to bottom, #fff, #888); 
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; 
+            margin-top: 10px; text-align: center;
+        }
+        .divider { width: 40px; height: 4px; background-color: #007aff; margin: 10px auto 25px; border-radius: 10px; }
+
+        /* CONFIGURATION CARD */
+        .no-print { 
+            width: 100%; max-width: 420px; background: #1a1a1a; border-radius: 30px; padding: 20px;
+            margin-bottom: 25px; border: 1px solid rgba(255,255,255,0.05);
+        }
+        .config-label { font-size: 0.65rem; font-weight: 800; color: #666; text-transform: uppercase; margin-bottom: 8px; letter-spacing: 1px; display: block; }
         
-        .action-row { display: flex; justify-content: space-between; margin-top: 5px; align-items: center; }
-        .btn { padding: 10px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; border: none; text-decoration: none; font-size: 0.8rem; }
-        .btn-print { background: #007aff; color: white; }
-        .btn-back { background: #666; color: white; }
-        .btn-filter { background: #333; color: white; }
+        .filter-row { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .filter-row select, .filter-row input { 
+            width: 100%; background: #252525; border: 1px solid #333; padding: 12px; border-radius: 15px; color: #fff; font-size: 0.9rem; outline: none;
+        }
+        input:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        .category-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+        .checkbox-item { 
+            display: flex; align-items: center; gap: 8px; font-size: 0.75rem; font-weight: 600; color: #888; 
+            background: rgba(255,255,255,0.03); padding: 10px; border-radius: 12px; cursor: pointer;
+        }
+        .checkbox-item input { accent-color: #007aff; width: 16px; height: 16px; }
+
+        /* ACTION BUTTONS */
+        .action-row { display: flex; flex-direction: column; gap: 10px; }
+        .btn { width: 100%; padding: 16px; border-radius: 100px; border: none; font-weight: 900; text-transform: uppercase; letter-spacing: 1px; font-size: 0.75rem; cursor: pointer; transition: 0.2s; text-align: center; text-decoration: none; }
+        .btn-generate { background: #fff; color: #000; }
+        .btn-print { background: #007aff; color: #fff; display: none; }
+        .btn-back-inline { background: rgba(255, 255, 255, 0.05); color: #888; border: 1px solid rgba(255, 255, 255, 0.1); }
+
+        /* REPORT OUTPUT AREA */
+        #report-output { display: none; width: 100%; max-width: 100%; }
+        header { border-bottom: 1px solid #333; margin-bottom: 15px; padding-bottom: 10px; }
+        .header-line-1 { font-size: 1.1rem; font-weight: 800; text-transform: uppercase; display: flex; justify-content: space-between; }
+        .header-line-2 { font-size: 0.7rem; font-weight: 700; color: #666; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* TABLE WRAPPER */
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 15px; border: 1px solid #333; -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; min-width: 800px; }
+        th, td { border: 1px solid #222; padding: 10px 5px; text-align: center; font-size: 0.65rem; }
+        th { background: #1a1a1a; color: #555; font-weight: 800; text-transform: uppercase; }
         
-        header { border-bottom: 2px solid #000; margin-bottom: 15px; padding-bottom: 10px; }
-        h1 { font-size: 1.2rem; text-transform: uppercase; }
-        
-        table { width: 100%; border-collapse: collapse; table-layout: fixed; }
-        th, td { border: 1px solid #000; padding: 4px; text-align: center; font-size: 0.55rem; word-wrap: break-word; }
-        th { background: #f0f0f0; font-weight: bold; text-transform: uppercase; }
-        
-        .date-col { width: 55px; font-weight: bold; background: #f9f9f9; }
-        .basal-col { background: #f0f8ff; font-weight: bold; }
-        .high { color: red; font-weight: bold; }
-        .low { color: blue; font-weight: bold; }
+        .date-col { position: sticky; left: 0; background: #111 !important; color: #fff; font-weight: 900; z-index: 5; border-right: 2px solid #333; }
+        .basal-col { background: rgba(0, 122, 255, 0.05); font-weight: 800; color: #007aff; }
+
+        /* HIGHLIGHTING */
+        .cell-low { background-color: rgba(0, 122, 255, 0.25) !important; color: #fff; font-weight: 900; }
+        .cell-high { background-color: rgba(255, 149, 0, 0.25) !important; color: #fff; font-weight: 900; }
+        .cell-vhigh { background-color: rgba(255, 59, 48, 0.3) !important; color: #fff; font-weight: 900; text-decoration: underline; }
 
         @media print {
-            .no-print { display: none; }
-            body { padding: 0; }
+            .no-print { display: none !important; }
+            body { background: #fff; color: #000; padding: 0; }
+            #report-output { display: block !important; }
+            .table-wrapper { overflow: visible; border: 1px solid #000; }
+            table { min-width: 100%; background: #fff; color: #000; }
+            th, td { border: 1px solid #000; color: #000; }
+            th { background: #f0f0f0; }
+            .date-col { position: static; background: #fff !important; color: #000; }
+            .cell-low { background-color: #d1e9ff !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+            .cell-high { background-color: #fff0d6 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+            .cell-vhigh { background-color: #ffd6d6 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
             @page { size: landscape; margin: 0.5cm; }
         }
     </style>
 </head>
 <body>
 
-    <div class="no-print">
-        <div class="filter-row">
-            <label>View Mode:</label>
-            <select id="view-mode" onchange="renderReport()">
-                <option value="full">Full Clinical View</option>
-                <option value="meals">Breakfast, Lunch & Dinner Only</option>
-            </select>
+    <div class="no-print" style="width: 100%; max-width: 420px;">
+        <h1>REPORTS</h1>
+        <div class="divider"></div>
 
-            <label>Range:</label>
-            <select id="quick-range" onchange="applyQuickRange(this.value)">
-                <option value="custom">Custom</option>
-                <option value="7" selected>Last 7 Days</option>
-                <option value="14">Last 14 Days</option>
-                <option value="30">Last 30 Days</option>
-                <option value="90">Last 90 Days</option>
-            </select>
-            
-            <label>From:</label>
-            <input type="date" id="filter-from">
-            <label>To:</label>
-            <input type="date" id="filter-to">
-            <button class="btn btn-filter" onclick="renderReport()">Apply</button>
-        </div>
-        <div class="action-row">
-            <a href="index.html" class="btn btn-back">← Back</a>
-            <button class="btn btn-print" onclick="window.print()">Print Report</button>
+        <div class="no-print">
+            <div class="config-section">
+                <label class="config-label">Time Range</label>
+                <div class="filter-row">
+                    <select id="quick-range" onchange="toggleDateInputs(this.value)">
+                        <option value="7" selected>Last 7 Days</option>
+                        <option value="14">Last 14 Days</option>
+                        <option value="30">Last 30 Days</option>
+                        <option value="90">Last 90 Days</option>
+                        <option value="custom">Custom Range</option>
+                    </select>
+                    <input type="date" id="filter-from" disabled>
+                    <input type="date" id="filter-to" disabled>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <label class="config-label">Categories</label>
+                <div class="category-grid">
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Early Morning" checked> Morning</label>
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Breakfast" checked> Breakfast</label>
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Lunch" checked> Lunch</label>
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Snack" checked> Snacks</label>
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Dinner" checked> Dinner</label>
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Bed Time" checked> Bed Time</label>
+                    <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Daily Basal" checked> Basal</label>
+                </div>
+            </div>
+
+            <div class="action-row">
+                <button class="btn btn-generate" onclick="handleGenerate()">Generate View</button>
+                <button id="print-btn" class="btn btn-print" onclick="window.print()">Print Report</button>
+                <a href="./index.html" class="btn btn-back-inline">← Back to Home</a>
+            </div>
         </div>
     </div>
 
-    <header>
-        <h1 id="user-display">Daily Glucose & Insulin Log</h1>
-        <p id="date-generated"></p>
-    </header>
+    <div id="report-output">
+        <header>
+            <div class="header-line-1">
+                <span id="display-name">--</span>
+                <span id="display-age">--</span>
+            </div>
+            <div class="header-line-2" id="display-range">--</div>
+        </header>
 
-    <table id="medical-table">
-        <thead id="table-head"></thead>
-        <tbody id="table-body"></tbody>
-    </table>
+        <div class="table-wrapper">
+            <table id="medical-table">
+                <thead id="table-head"></thead>
+                <tbody id="table-body"></tbody>
+            </table>
+        </div>
+    </div>
 
     <script>
-        function applyQuickRange(days) {
-            if (days === 'custom') return;
+        function getAge() {
+            const dob = localStorage.getItem('profile_dob');
+            if(!dob) return "AGE NOT SET";
+            const bday = new Date(dob);
+            const now = new Date();
+            let y = now.getFullYear() - bday.getFullYear();
+            let m = now.getMonth() - bday.getMonth();
+            if (m < 0) { y--; m += 12; }
+            return `${y}Y, ${m}M`;
+        }
+
+        function initDates() {
             const to = new Date();
             const from = new Date();
-            from.setDate(to.getDate() - parseInt(days));
+            from.setDate(to.getDate() - 7);
             document.getElementById('filter-to').value = to.toISOString().split('T')[0];
             document.getElementById('filter-from').value = from.toISOString().split('T')[0];
-            renderReport();
         }
 
-        function setDefaults() {
-            const now = new Date();
-            const lastWeek = new Date();
-            lastWeek.setDate(now.getDate() - 7);
-            document.getElementById('filter-from').value = lastWeek.toISOString().split('T')[0];
-            document.getElementById('filter-to').value = now.toISOString().split('T')[0];
+        function toggleDateInputs(val) {
+            const fromInput = document.getElementById('filter-from');
+            const toInput = document.getElementById('filter-to');
+            fromInput.disabled = (val !== 'custom');
+            toInput.disabled = (val !== 'custom');
+            if (val !== 'custom') {
+                const to = new Date();
+                const from = new Date();
+                from.setDate(to.getDate() - parseInt(val));
+                fromInput.value = from.toISOString().split('T')[0];
+                toInput.value = to.toISOString().split('T')[0];
+            }
         }
 
-        function renderReport() {
-            const name = localStorage.getItem('profile_name') || "Pragathi Suresh";
-            const viewMode = document.getElementById('view-mode').value;
+        function getCellClass(val) {
+            if (val === '--' || !val) return '';
+            const num = parseInt(val);
+            if (num < 70) return 'cell-low';
+            if (num > 240) return 'cell-vhigh';
+            if (num > 180) return 'cell-high';
+            return '';
+        }
+
+        function handleGenerate() {
             const fromDate = document.getElementById('filter-from').value;
             const toDate = document.getElementById('filter-to').value;
+            const selectedCats = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value);
+            
+            if (selectedCats.length === 0) { alert("Select categories."); return; }
 
-            document.getElementById('user-display').innerText = name + " - Clinical Report";
-            document.getElementById('date-generated').innerText = "Range: " + fromDate + " to " + toDate;
+            document.getElementById('display-name').innerText = localStorage.getItem('profile_name') || "PRAGATHI SURESH";
+            document.getElementById('display-age').innerText = getAge();
+            document.getElementById('display-range').innerText = `PERIOD: ${new Date(fromDate).toLocaleDateString()} - ${new Date(toDate).toLocaleDateString()}`;
 
             const logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
             const grouped = {};
-
             logs.forEach(log => {
                 const date = log.timestamp.split('T')[0];
                 if (date >= fromDate && date <= toDate) {
@@ -119,89 +209,50 @@
                     grouped[date][log.category] = { g: log.glucose, i: log.insulin };
                 }
             });
-
-            const thead = document.getElementById('table-head');
-            const tbody = document.getElementById('table-body');
-            tbody.innerHTML = ''; 
-
-            if (viewMode === 'full') {
-                thead.innerHTML = `
-                    <tr>
-                        <th rowspan="2" class="date-col">Date</th>
-                        <th rowspan="2">Early Morning</th>
-                        <th colspan="3">Breakfast</th>
-                        <th colspan="3">Lunch</th>
-                        <th colspan="3">Snack</th>
-                        <th colspan="3">Dinner</th>
-                        <th rowspan="2">Bed Time</th>
-                        <th rowspan="2" class="basal-col">Daily Basal</th>
-                    </tr>
-                    <tr>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                    </tr>`;
-            } else {
-                thead.innerHTML = `
-                    <tr>
-                        <th rowspan="2" class="date-col">Date</th>
-                        <th colspan="3">Breakfast</th>
-                        <th colspan="3">Lunch</th>
-                        <th colspan="3">Dinner</th>
-                        <th rowspan="2" class="basal-col">Daily Basal</th>
-                    </tr>
-                    <tr>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                        <th>Pre</th><th>Post</th><th>Unit</th>
-                    </tr>`;
-            }
-
             const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
-            if (sortedDates.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="20" style="padding:20px;">No logs found.</td></tr>`;
-                return;
-            }
 
-            sortedDates.forEach(date => {
-                const d = grouped[date];
-                const row = document.createElement('tr');
-                const f = (cat, type = 'g') => {
-                    const entry = d[cat];
-                    if (!entry) return '--';
-                    if (type === 'i') return entry.i || '0';
-                    const val = entry.g;
-                    if (val === '--') return '--';
-                    if (parseInt(val) > 180) return `<span class="high">${val}</span>`;
-                    if (parseInt(val) < 70) return `<span class="low">${val}</span>`;
-                    return val;
-                };
-
-                if (viewMode === 'full') {
-                    row.innerHTML = `
-                        <td class="date-col">${new Date(date).toLocaleDateString([], {month:'short', day:'numeric'})}</td>
-                        <td>${f('Early Morning')}</td>
-                        <td>${f('Pre Breakfast')}</td><td>${f('Post Breakfast')}</td><td>${f('Pre Breakfast', 'i')}</td>
-                        <td>${f('Pre Lunch')}</td><td>${f('Post Lunch')}</td><td>${f('Pre Lunch', 'i')}</td>
-                        <td>${f('Pre Snack')}</td><td>${f('Post Snack')}</td><td>${f('Pre Snack', 'i')}</td>
-                        <td>${f('Pre Dinner')}</td><td>${f('Post Dinner')}</td><td>${f('Pre Dinner', 'i')}</td>
-                        <td>${f('Bed Time')}</td>
-                        <td class="basal-col">${f('Daily Basal', 'i')}</td>`;
-                } else {
-                    row.innerHTML = `
-                        <td class="date-col">${new Date(date).toLocaleDateString([], {month:'short', day:'numeric'})}</td>
-                        <td>${f('Pre Breakfast')}</td><td>${f('Post Breakfast')}</td><td>${f('Pre Breakfast', 'i')}</td>
-                        <td>${f('Pre Lunch')}</td><td>${f('Post Lunch')}</td><td>${f('Pre Lunch', 'i')}</td>
-                        <td>${f('Pre Dinner')}</td><td>${f('Post Dinner')}</td><td>${f('Pre Dinner', 'i')}</td>
-                        <td class="basal-col">${f('Daily Basal', 'i')}</td>`;
-                }
-                tbody.appendChild(row);
-            });
+            renderTable(sortedDates, grouped, selectedCats);
+            document.getElementById('report-output').style.display = 'block';
+            document.getElementById('print-btn').style.display = 'block';
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
-        setDefaults();
-        renderReport();
+        function renderTable(dates, data, selectedCats) {
+            const thead = document.getElementById('table-head');
+            const tbody = document.getElementById('table-body');
+            
+            let h1 = `<tr><th rowspan="2" class="date-col">DATE</th>`;
+            let h2 = `<tr>`;
+
+            if (selectedCats.includes("Early Morning")) h1 += `<th rowspan="2">MORNING</th>`;
+            ["Breakfast", "Lunch", "Snack", "Dinner"].forEach(m => {
+                if (selectedCats.includes(m)) {
+                    h1 += `<th colspan="3">${m.toUpperCase()}</th>`;
+                    h2 += `<th>PRE</th><th>POST</th><th>UNIT</th>`;
+                }
+            });
+            if (selectedCats.includes("Bed Time")) h1 += `<th rowspan="2">BED</th>`;
+            if (selectedCats.includes("Daily Basal")) h1 += `<th rowspan="2" class="basal-col">BASAL</th>`;
+            
+            thead.innerHTML = h1 + `</tr>` + h2 + `</tr>`;
+            tbody.innerHTML = dates.map(date => {
+                const d = data[date];
+                let row = `<td class="date-col">${new Date(date).toLocaleDateString([], {month:'short', day:'numeric'})}</td>`;
+                if (selectedCats.includes("Early Morning")) row += `<td class="${getCellClass(d['Early Morning']?.g)}">${d['Early Morning']?.g || '--'}</td>`;
+                ["Breakfast", "Lunch", "Snack", "Dinner"].forEach(m => {
+                    if (selectedCats.includes(m)) {
+                        const preG = d['Pre '+m]?.g || '--';
+                        const postG = d['Post '+m]?.g || '--';
+                        row += `<td class="${getCellClass(preG)}">${preG}</td><td class="${getCellClass(postG)}">${postG}</td><td>${d['Pre '+m]?.i || '0'}</td>`;
+                    }
+                });
+                if (selectedCats.includes("Bed Time")) row += `<td class="${getCellClass(d['Bed Time']?.g)}">${d['Bed Time']?.g || '--'}</td>`;
+                if (selectedCats.includes("Daily Basal")) row += `<td class="basal-col">${d['Daily Basal']?.i || '--'}</td>`;
+                return `<tr>${row}</tr>`;
+            }).join('');
+        }
+
+        initDates();
     </script>
 </body>
 </html>
