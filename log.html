@@ -38,6 +38,7 @@
         .form-group { margin-bottom: 15px; }
         label { display: block; font-size: 0.6rem; color: #666; text-transform: uppercase; font-weight: 800; margin-bottom: 6px; }
         input, select { width: 100%; background: #252525; border: 1px solid #333; border-radius: 15px; padding: 12px; color: white; font-size: 1rem; font-weight: 600; outline: none; }
+        input:disabled, select:disabled { opacity: 0.4; color: #444; }
         .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
         .save-btn { width: 100%; background: #fff; color: #000; padding: 15px; border-radius: 100px; border: none; font-weight: 900; text-transform: uppercase; letter-spacing: 2px; font-size: 0.75rem; cursor: pointer; transition: 0.2s; }
         .save-btn:active { transform: scale(0.96); }
@@ -89,6 +90,7 @@
         .icon-circle { width: 38px; height: 38px; background: rgba(255,255,255,0.03); border-radius: 50%; display: flex; align-items: center; justify-content: center; }
         .log-details h3 { font-size: 0.6rem; color: #888; text-transform: uppercase; }
         .log-details .value { font-size: 1.1rem; font-weight: 800; }
+        .log-notes { font-size: 0.6rem; color: #00ffaa; margin-top: 4px; font-style: italic; font-weight: 600; max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
         /* BOTTOM NAV */
         .back-nav { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 1000; }
@@ -114,34 +116,48 @@
     <div class="entry-card">
         <h2 id="form-title">Quick Entry</h2>
         <input type="hidden" id="edit-id">
-        <div class="form-group"><label>Date & Time</label><input type="datetime-local" id="log-datetime"></div>
+        
+        <div class="form-group">
+            <label>Date & Time</label>
+            <input type="datetime-local" id="log-datetime" onchange="updateCategoryAvailability()">
+        </div>
+
+        <div class="form-row">
+            <div class="form-group">
+                <label>Category</label>
+                <select id="log-category">
+                    <option value="Early Morning">Early Morning</option>
+                    <option value="Before Breakfast">Before Breakfast</option>
+                    <option value="After Breakfast">After Breakfast</option>
+                    <option value="Before Lunch">Before Lunch</option>
+                    <option value="After Lunch">After Lunch</option>
+                    <option value="Before Snack">Before Snack</option>
+                    <option value="After Snack">After Snack</option>
+                    <option value="Before Dinner">Before Dinner</option>
+                    <option value="After Dinner">After Dinner</option>
+                    <option value="Bed Time">Bed Time</option>
+                    <option value="General">General</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>Source</label>
+                <select id="log-source">
+                    <option value="Glucometer" selected>Glucometer</option>
+                    <option value="Sensor">Sensor</option>
+                </select>
+            </div>
+        </div>
+
         <div class="form-row">
             <div class="form-group"><label>Glucose</label><input type="number" id="log-glucose" placeholder="---"></div>
             <div class="form-group"><label>Insulin</label><input type="number" id="log-insulin" placeholder="0.0" step="0.5"></div>
         </div>
+
         <div class="form-group">
-            <label>Category</label>
-            <select id="log-category">
-                <option value="Early Morning">Early Morning</option>
-                <option value="Pre Breakfast">Pre Breakfast</option>
-                <option value="Post Breakfast">Post Breakfast</option>
-                <option value="Pre Lunch">Pre Lunch</option>
-                <option value="Post Lunch">Post Lunch</option>
-                <option value="Pre Snack">Pre Snack</option>
-                <option value="Post Snack">Post Snack</option>
-                <option value="Pre Dinner">Pre Dinner</option>
-                <option value="Post Dinner">Post Dinner</option>
-                <option value="Bed Time">Bed Time</option>
-                <option value="General">General</option>
-            </select>
+            <label>Notes</label>
+            <input type="text" id="log-notes" placeholder="e.g. 30min Walk, Pizza, Feeling Low">
         </div>
-        <div class="form-group">
-            <label>Reading Source</label>
-            <select id="log-source">
-                <option value="Sensor">Sensor</option>
-                <option value="Glucometer">Glucometer</option>
-            </select>
-        </div>
+
         <button class="save-btn" id="save-button" onclick="saveEntry()">Save Entry</button>
         <button id="cancel-edit-btn" style="display:none; background:transparent; color:#666; width:100%; margin-top:10px; border:none; text-transform:uppercase; font-size:0.6rem; font-weight:800;" onclick="resetForm()">Cancel Edit</button>
     </div>
@@ -185,11 +201,46 @@
 
     <script>
         let currentSelectedId = null;
+        const categoryOrder = [
+            "Early Morning", "Before Breakfast", "After Breakfast", 
+            "Before Lunch", "After Lunch", "Before Snack", 
+            "After Snack", "Before Dinner", "After Dinner", "Bed Time"
+        ];
 
         function init() {
             resetForm();
             initBasal();
             renderLogs();
+        }
+
+        function updateCategoryAvailability() {
+            const editId = document.getElementById('edit-id').value;
+            const selectedDateStr = document.getElementById('log-datetime').value.split('T')[0];
+            const logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
+            const categorySelect = document.getElementById('log-category');
+            
+            const usedCategories = logs
+                .filter(l => l.timestamp.startsWith(selectedDateStr) && l.id != editId && l.category !== 'General' && l.category !== 'Daily Basal')
+                .map(l => l.category);
+
+            let firstAvailable = "General";
+            let foundFirst = false;
+
+            Array.from(categorySelect.options).forEach(option => {
+                if (option.value === "General") return;
+                
+                const isUsed = usedCategories.includes(option.value);
+                option.disabled = isUsed;
+                
+                if (!editId && !foundFirst && !isUsed && categoryOrder.includes(option.value)) {
+                    firstAvailable = option.value;
+                    foundFirst = true;
+                }
+            });
+
+            if (!editId) {
+                categorySelect.value = firstAvailable;
+            }
         }
 
         function resetForm() {
@@ -198,11 +249,15 @@
             document.getElementById('edit-id').value = "";
             document.getElementById('log-glucose').value = "";
             document.getElementById('log-insulin').value = "";
-            document.getElementById('log-category').value = "General";
-            document.getElementById('log-source').value = "Sensor";
+            document.getElementById('log-notes').value = "";
+            document.getElementById('log-source').value = "Glucometer";
             document.getElementById('cancel-edit-btn').style.display = "none";
-            const n = new Date(); n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
+            
+            const n = new Date(); 
+            n.setMinutes(n.getMinutes() - n.getTimezoneOffset());
             document.getElementById('log-datetime').value = n.toISOString().slice(0, 16);
+            
+            updateCategoryAvailability();
         }
 
         function syncToDashboard(allLogs) {
@@ -239,7 +294,8 @@
                 glucose: glucoseVal || '--',
                 insulin: document.getElementById('log-insulin').value || '0',
                 category: document.getElementById('log-category').value,
-                source: sourceVal
+                source: sourceVal,
+                notes: document.getElementById('log-notes').value || ''
             };
 
             if (!editId && sourceVal === 'Glucometer' && glucoseVal && glucoseVal !== '') {
@@ -289,7 +345,7 @@
         function initBasal() {
             document.getElementById('basal-date').value = new Date().toISOString().split('T')[0];
             document.getElementById('basal-clock').value = localStorage.getItem('user_basal_time') || "22:00";
-            updateBasalDisplay(); setInterval(updateBasalDisplay, 1000); 
+            updateBasalDisplay(); setInterval(updateBasalDisplay, 1000);
         }
 
         function updateBasalDisplay() {
@@ -329,7 +385,7 @@
             const dose = prompt("Enter Basal Units:", localStorage.getItem('last_basal_dose') || "20");
             if (dose) {
                 localStorage.setItem('last_basal_dose', dose);
-                const entry = { id: Date.now(), timestamp: `${document.getElementById('basal-date').value}T${document.getElementById('basal-clock').value}`, glucose: '--', insulin: dose, category: 'Daily Basal', source: 'N/A' };
+                const entry = { id: Date.now(), timestamp: `${document.getElementById('basal-date').value}T${document.getElementById('basal-clock').value}`, glucose: '--', insulin: dose, category: 'Daily Basal', source: 'N/A', notes: '' };
                 let logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
                 logs.push(entry); 
                 localStorage.setItem('user_logs', JSON.stringify(logs));
@@ -362,6 +418,7 @@
                                         <div class="log-details">
                                             <h3>${log.insulin} Units</h3>
                                             <div class="value">${log.glucose === '--' ? '' : log.glucose + ' <span style="font-size:0.7rem;color:#555">mg/dL</span>'}</div>
+                                            ${log.notes ? `<div class="log-notes">${log.notes}</div>` : ''}
                                         </div>
                                     </div>
                                     <div class="log-right" style="text-align:right">
@@ -389,8 +446,12 @@
             document.getElementById('log-glucose').value = entry.glucose === '--' ? '' : entry.glucose;
             document.getElementById('log-insulin').value = entry.insulin;
             document.getElementById('log-category').value = entry.category;
-            document.getElementById('log-source').value = entry.source || 'Sensor';
+            document.getElementById('log-source').value = entry.source || 'Glucometer';
+            document.getElementById('log-notes').value = entry.notes || '';
             document.getElementById('cancel-edit-btn').style.display = "block";
+            
+            updateCategoryAvailability(); 
+            
             closeActionMenu();
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }

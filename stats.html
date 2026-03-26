@@ -33,7 +33,6 @@
 
         .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; }
 
-        /* 3D PIE CHART STYLES */
         .pie-wrapper {
             position: relative;
             width: 260px;
@@ -47,18 +46,15 @@
             border-radius: 50%;
             background: conic-gradient(#333 0% 100%);
             position: relative;
-            /* 3D Lift Effect */
             transform: rotateX(25deg);
-            box-shadow: 
-                0 15px 0 #000, 
-                0 20px 30px rgba(0,0,0,0.5);
+            box-shadow: 0 15px 0 #000, 0 20px 30px rgba(0,0,0,0.5);
             transition: 0.5s ease;
         }
         .pie-labels-container {
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none;
-            transform: rotateX(25deg); /* Match the chart tilt */
+            transform: rotateX(25deg);
         }
         .pie-label {
             position: absolute;
@@ -72,7 +68,6 @@
             text-shadow: 0 1px 0 rgba(255,255,255,0.2);
         }
 
-        /* STAR RATING */
         .star-container { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
         .stars { display: flex; gap: 4px; font-size: 1.8rem; color: #333; }
         .star-active { color: #00ffaa; text-shadow: 0 0 10px rgba(0, 255, 170, 0.3); }
@@ -80,7 +75,6 @@
         .tir-info p { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
         .tir-info span { font-size: 0.65rem; color: #666; font-weight: 700; text-transform: uppercase; }
 
-        /* BAR CHART STYLES */
         .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 140px; margin-top: 25px; padding-bottom: 25px; width: 100%; }
         .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
         .bar-pair { display: flex; align-items: flex-end; gap: 2px; height: 100%; width: 100%; justify-content: center; }
@@ -106,7 +100,7 @@
                 <div>
                     <div class="card-title">Est. HbA1c</div>
                     <div class="big-val" id="hba1c-val">--</div>
-                    <div class="sub-label">90 Day projection</div>
+                    <div class="sub-label">Projection</div>
                 </div>
                 <div style="text-align: right;">
                     <div class="card-title">Avg Glucose</div>
@@ -196,7 +190,6 @@
                     const end = currentPercent + percent;
                     gradientStr += `${item.color} ${start}% ${end}%${index < data.length - 1 ? ',' : ''}`;
                     
-                    // Logic to position labels in the middle of segments
                     if (percent > 8) { 
                         const midAngle = ((start + (percent / 2)) / 100) * 2 * Math.PI - (Math.PI / 2);
                         const radius = 75; 
@@ -274,10 +267,10 @@
 
             const groups = [
                 { label: 'Morning', keys: ['Early Morning'] },
-                { label: 'Breakfast', keys: ['Pre Breakfast', 'Post Breakfast'] },
-                { label: 'Lunch', keys: ['Pre Lunch', 'Post Lunch'] },
-                { label: 'Snack', keys: ['Pre Snack', 'Post Snack'] },
-                { label: 'Dinner', keys: ['Pre Dinner', 'Post Dinner'] },
+                { label: 'Breakfast', keys: ['Before Breakfast', 'After Breakfast'] },
+                { label: 'Lunch', keys: ['Before Lunch', 'After Lunch'] },
+                { label: 'Snack', keys: ['Before Snack', 'After Snack'] },
+                { label: 'Dinner', keys: ['Before Dinner', 'After Dinner'] },
                 { label: 'Bed', keys: ['Bed Time'] }
             ];
 

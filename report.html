@@ -57,15 +57,20 @@
         .header-line-2 { font-size: 0.7rem; font-weight: 700; color: #666; margin-top: 5px; text-transform: uppercase; letter-spacing: 1px; }
 
         /* TABLE WRAPPER */
-        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 15px; border: 1px solid #333; -webkit-overflow-scrolling: touch; }
-        table { width: 100%; border-collapse: collapse; min-width: 800px; }
-        th, td { border: 1px solid #222; padding: 10px 5px; text-align: center; font-size: 0.65rem; }
+        .table-wrapper { width: 100%; overflow-x: auto; border-radius: 15px; border: 1px solid #333; -webkit-overflow-scrolling: touch; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; min-width: 1000px; }
+        th, td { border: 1px solid #222; padding: 10px 5px; text-align: center; font-size: 0.6rem; }
         th { background: #1a1a1a; color: #555; font-weight: 800; text-transform: uppercase; }
         
         .date-col { position: sticky; left: 0; background: #111 !important; color: #fff; font-weight: 900; z-index: 5; border-right: 2px solid #333; }
+        
+        /* Notes Styling */
+        .notes-col { text-align: left; padding: 8px; color: #00ffaa; font-style: italic; min-width: 250px; }
+        .note-line { display: block; margin-bottom: 3px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px; }
+        .note-tag { font-weight: 800; text-transform: uppercase; font-size: 0.5rem; color: #555; margin-right: 5px; font-style: normal; }
+
         .basal-col { background: rgba(0, 122, 255, 0.05); font-weight: 800; color: #007aff; }
 
-        /* HIGHLIGHTING */
         .cell-low { background-color: rgba(0, 122, 255, 0.25) !important; color: #fff; font-weight: 900; }
         .cell-high { background-color: rgba(255, 149, 0, 0.25) !important; color: #fff; font-weight: 900; }
         .cell-vhigh { background-color: rgba(255, 59, 48, 0.3) !important; color: #fff; font-weight: 900; text-decoration: underline; }
@@ -79,9 +84,9 @@
             th, td { border: 1px solid #000; color: #000; }
             th { background: #f0f0f0; }
             .date-col { position: static; background: #fff !important; color: #000; }
-            .cell-low { background-color: #d1e9ff !important; color: #000 !important; -webkit-print-color-adjust: exact; }
-            .cell-high { background-color: #fff0d6 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
-            .cell-vhigh { background-color: #ffd6d6 !important; color: #000 !important; -webkit-print-color-adjust: exact; }
+            .notes-col { color: #000; font-style: normal; border: 1px solid #000; }
+            .note-line { border-bottom: 1px solid #eee; }
+            .note-tag { color: #888; }
             @page { size: landscape; margin: 0.5cm; }
         }
     </style>
@@ -118,6 +123,10 @@
                     <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Dinner" checked> Dinner</label>
                     <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Bed Time" checked> Bed Time</label>
                     <label class="checkbox-item"><input type="checkbox" class="cat-check" value="Daily Basal" checked> Basal</label>
+                    
+                    <label class="checkbox-item" style="grid-column: span 2; background: rgba(255, 255, 255, 0.05); color: #888;">
+                        <input type="checkbox" id="include-notes-check"> Include Clinical Notes
+                    </label>
                 </div>
             </div>
 
@@ -147,6 +156,15 @@
     </div>
 
     <script>
+        const chronologicalOrder = [
+            "Early Morning", 
+            "Before Breakfast", "After Breakfast", 
+            "Before Lunch", "After Lunch", 
+            "Before Snack", "After Snack", 
+            "Before Dinner", "After Dinner", 
+            "Bed Time", "Daily Basal"
+        ];
+
         function getAge() {
             const dob = localStorage.getItem('profile_dob');
             if(!dob) return "AGE NOT SET";
@@ -193,6 +211,7 @@
             const fromDate = document.getElementById('filter-from').value;
             const toDate = document.getElementById('filter-to').value;
             const selectedCats = Array.from(document.querySelectorAll('.cat-check:checked')).map(c => c.value);
+            const includeNotes = document.getElementById('include-notes-check').checked;
             
             if (selectedCats.length === 0) { alert("Select categories."); return; }
 
@@ -202,22 +221,28 @@
 
             const logs = JSON.parse(localStorage.getItem('user_logs') || '[]');
             const grouped = {};
+            
             logs.forEach(log => {
                 const date = log.timestamp.split('T')[0];
                 if (date >= fromDate && date <= toDate) {
-                    if (!grouped[date]) grouped[date] = {};
-                    grouped[date][log.category] = { g: log.glucose, i: log.insulin };
+                    if (!grouped[date]) grouped[date] = { data: {}, rawNotes: [] };
+                    
+                    grouped[date].data[log.category] = { g: log.glucose, i: log.insulin };
+                    
+                    if (log.notes && log.notes.trim() !== '') {
+                        grouped[date].rawNotes.push({ cat: log.category, text: log.notes });
+                    }
                 }
             });
             const sortedDates = Object.keys(grouped).sort((a, b) => new Date(a) - new Date(b));
 
-            renderTable(sortedDates, grouped, selectedCats);
+            renderTable(sortedDates, grouped, selectedCats, includeNotes);
             document.getElementById('report-output').style.display = 'block';
             document.getElementById('print-btn').style.display = 'block';
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         }
 
-        function renderTable(dates, data, selectedCats) {
+        function renderTable(dates, groupedData, selectedCats, includeNotes) {
             const thead = document.getElementById('table-head');
             const tbody = document.getElementById('table-body');
             
@@ -228,26 +253,54 @@
             ["Breakfast", "Lunch", "Snack", "Dinner"].forEach(m => {
                 if (selectedCats.includes(m)) {
                     h1 += `<th colspan="3">${m.toUpperCase()}</th>`;
-                    h2 += `<th>PRE</th><th>POST</th><th>UNIT</th>`;
+                    h2 += `<th>BEFORE</th><th>AFTER</th><th>UNIT</th>`;
                 }
             });
             if (selectedCats.includes("Bed Time")) h1 += `<th rowspan="2">BED</th>`;
             if (selectedCats.includes("Daily Basal")) h1 += `<th rowspan="2" class="basal-col">BASAL</th>`;
             
+            if (includeNotes) h1 += `<th rowspan="2">CLINICAL NOTES</th>`;
+            
             thead.innerHTML = h1 + `</tr>` + h2 + `</tr>`;
             tbody.innerHTML = dates.map(date => {
-                const d = data[date];
+                const dayObj = groupedData[date];
+                const d = dayObj.data;
                 let row = `<td class="date-col">${new Date(date).toLocaleDateString([], {month:'short', day:'numeric'})}</td>`;
+                
                 if (selectedCats.includes("Early Morning")) row += `<td class="${getCellClass(d['Early Morning']?.g)}">${d['Early Morning']?.g || '--'}</td>`;
+                
                 ["Breakfast", "Lunch", "Snack", "Dinner"].forEach(m => {
                     if (selectedCats.includes(m)) {
-                        const preG = d['Pre '+m]?.g || '--';
-                        const postG = d['Post '+m]?.g || '--';
-                        row += `<td class="${getCellClass(preG)}">${preG}</td><td class="${getCellClass(postG)}">${postG}</td><td>${d['Pre '+m]?.i || '0'}</td>`;
+                        const preG = d['Before '+m]?.g || '--';
+                        const postG = d['After '+m]?.g || '--';
+                        row += `<td class="${getCellClass(preG)}">${preG}</td><td class="${getCellClass(postG)}">${postG}</td><td>${d['Before '+m]?.i || '0'}</td>`;
                     }
                 });
+                
                 if (selectedCats.includes("Bed Time")) row += `<td class="${getCellClass(d['Bed Time']?.g)}">${d['Bed Time']?.g || '--'}</td>`;
                 if (selectedCats.includes("Daily Basal")) row += `<td class="basal-col">${d['Daily Basal']?.i || '--'}</td>`;
+                
+                if (includeNotes) {
+                    const filteredNotes = dayObj.rawNotes
+                        .filter(n => {
+                            if (n.cat === "Early Morning" && selectedCats.includes("Early Morning")) return true;
+                            if (n.cat === "Bed Time" && selectedCats.includes("Bed Time")) return true;
+                            if (n.cat === "Daily Basal" && selectedCats.includes("Daily Basal")) return true;
+                            if (n.cat.includes("Breakfast") && selectedCats.includes("Breakfast")) return true;
+                            if (n.cat.includes("Lunch") && selectedCats.includes("Lunch")) return true;
+                            if (n.cat.includes("Snack") && selectedCats.includes("Snack")) return true;
+                            if (n.cat.includes("Dinner") && selectedCats.includes("Dinner")) return true;
+                            return false;
+                        })
+                        .sort((a, b) => chronologicalOrder.indexOf(a.cat) - chronologicalOrder.indexOf(b.cat));
+
+                    const noteHtml = filteredNotes.length > 0 
+                        ? filteredNotes.map(n => `<span class="note-line"><span class="note-tag">${n.cat}:</span>${n.text}</span>`).join('') 
+                        : '--';
+                    
+                    row += `<td class="notes-col">${noteHtml}</td>`;
+                }
+                
                 return `<tr>${row}</tr>`;
             }).join('');
         }
