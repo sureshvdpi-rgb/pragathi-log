@@ -255,21 +255,33 @@
             let logs = rawLogs ? JSON.parse(rawLogs) : [];
             logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
+            // 1. Insulin Alert
             const currentIOB = calculateIOB(logs);
             if (currentIOB > 0) addAlert("Insulin on Board", `${currentIOB.toFixed(1)} Units Active`, "💉", "theme-red", "./log.html");
 
+            // 2. Basal Alert
             const bTime = localStorage.getItem('user_basal_time') || "22:00"; 
             const todayStr = now.toISOString().split('T')[0];
             const target = new Date(todayStr + 'T' + bTime).getTime();
             const taken = logs.some(l => l.category === 'Daily Basal' && l.timestamp.startsWith(todayStr));
             if (!taken && target - now.getTime() <= 0) addAlert("Injection Due", "Basal dose overdue", "💉", "theme-blue", "./log.html");
 
-            // Backup Alert Logic
+            // 3. Monitoring Alert (Restored: No test in 4+ hours)
+            const lastReading = logs.find(l => l.glucose && l.glucose !== '--');
+            if (lastReading) {
+                const lastTime = new Date(lastReading.timestamp).getTime();
+                if (now.getTime() - lastTime > (4 * 60 * 60 * 1000)) {
+                    addAlert("Monitoring Alert", "No manual test in 4+ hours", "🩸", "theme-yellow", "./log.html");
+                }
+            }
+
+            // 4. Backup Alert
             const lastBackup = localStorage.getItem('last_backup_date');
             if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > (7 * 24 * 60 * 60 * 1000)) {
                 addAlert("Security Alert", "Data backup due (7 Days)", "💾", "theme-blue", "javascript:exportData()");
             }
 
+            // 5. Supply Expiry Alerts
             ['rn', 'bn', 'lc'].forEach(k => {
                 const exp = localStorage.getItem(k + '_expiry');
                 if (exp && now.getTime() >= parseInt(exp)) addAlert("Action Needed", `${k === 'lc' ? 'Lancet' : (k === 'rn' ? 'Rapid' : 'Basal') + ' Needle'} Expired`, "⏰", "theme-red", "./supply.html");
@@ -302,6 +314,8 @@
 
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+                
+                // 1. Hero AI Sensor
                 const aiValEl = document.getElementById('ai-sensor-val');
                 const aiArrowEl = document.getElementById('ai-trend-arrow');
                 const aiMsgEl = document.getElementById('ai-sensor-msg');
@@ -316,6 +330,8 @@
                     else { aiArrowEl.innerText = "→"; aiArrowEl.style.color = "#666"; }
                     aiMsgEl.innerText = `${predictionData.food.toUpperCase()}${predictionData.isTimeWeighted ? " + Pattern" : ""}`;
                 }
+
+                // 2. Log Tiles (Basal Timer & Last Reading)
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
                 if (last) {
                     document.getElementById('mini-last-bg').innerText = last.glucose;
@@ -336,6 +352,8 @@
                     if (diff <= 0) { if(bTimerEl) bTimerEl.innerText = "DUE"; if(bStatusEl) bStatusEl.innerText = "Inject Now"; }
                     else { const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); if(bTimerEl) bTimerEl.innerText = `${h}h ${m}m`; if(bStatusEl) bStatusEl.innerText = "Remaining"; }
                 }
+
+                // 3. Stats Tiles (Average & HbA1c)
                 if (todayLogs.length > 0) {
                     const avgToday = todayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / todayLogs.length;
                     const avgEl = document.getElementById('mini-stat-avg');
@@ -348,11 +366,14 @@
                     if(hba1cEl) hba1cEl.innerText = ((avgAll + 46.7) / 28.7).toFixed(1) + "%";
                 }
             }
+
+            // Supply Sync
             document.getElementById('mini-stock-needle').innerText = localStorage.getItem('needle_common_stock') || 0;
             document.getElementById('mini-stock-rc').innerText = localStorage.getItem('rc_stock') || 0;
             document.getElementById('mini-stock-bc').innerText = localStorage.getItem('bc_stock') || 0;
             document.getElementById('mini-stock-strip').innerText = localStorage.getItem('strip_stock') || 0;
             document.getElementById('mini-stock-lancet').innerText = localStorage.getItem('lancet_stock') || 0;
+            
             refreshAlerts();
         }
 
