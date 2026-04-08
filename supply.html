@@ -223,7 +223,7 @@
 
         <div class="info-box">
             <div class="stock-display">
-                <span class="stock-count" id="lancet-stock-main">0</span>
+                <span class="stock-count" id="lc-stock-main">0</span>
                 <span class="stock-label">Stock</span>
             </div>
             <div class="info-content">
@@ -249,7 +249,7 @@
                     <option value="rc">Rapid Cartridge</option>
                     <option value="bc">Basal Cartridge</option>
                     <option value="strip">Test Strips</option>
-                    <option value="lancet">Lancet</option>
+                    <option value="lc">Lancet</option>
                 </select>
             </div>
 
@@ -349,8 +349,9 @@
                 document.getElementById('set-goal-single').value = localStorage.getItem(key + '_goal') || '';
             }
 
-            document.getElementById('set-low-alert').value = localStorage.getItem(key + '_low_alert') || '';
-            const expiry = localStorage.getItem(key + '_product_expiry');
+            const stockKey = key === 'lc' ? 'lancet' : key;
+            document.getElementById('set-low-alert').value = localStorage.getItem(stockKey + '_low_alert') || '';
+            const expiry = localStorage.getItem(stockKey + '_product_expiry');
             document.getElementById('set-expiry-date').value = expiry || '';
             document.getElementById('set-never-expiry').checked = !expiry;
             toggleExpiry(!expiry);
@@ -358,10 +359,12 @@
 
         function saveSettings() {
             const key = document.getElementById('set-category').value;
+            const stockKey = key === 'lc' ? 'lancet' : key;
             const addVal = parseInt(document.getElementById('set-add-stock').value || 0);
+            
             if (addVal !== 0) {
-                const current = parseInt(localStorage.getItem(key + '_stock') || 0);
-                localStorage.setItem(key + '_stock', current + addVal);
+                const current = parseInt(localStorage.getItem(stockKey + '_stock') || 0);
+                localStorage.setItem(stockKey + '_stock', current + addVal);
             }
 
             if (key === 'needle_common') {
@@ -371,15 +374,14 @@
                 updateBacklog(key, document.getElementById('set-goal-single').value, document.getElementById('backlog-single').value);
             }
 
-            localStorage.setItem(key + '_low_alert', document.getElementById('set-low-alert').value);
-            localStorage.setItem(key + '_product_expiry', document.getElementById('set-expiry-date').value);
+            localStorage.setItem(stockKey + '_low_alert', document.getElementById('set-low-alert').value);
+            localStorage.setItem(stockKey + '_product_expiry', document.getElementById('set-expiry-date').value);
             updateUI(); closeSettings();
         }
 
         function updateBacklog(key, goal, backlogDate) {
             localStorage.setItem(key + '_goal', goal);
             if(backlogDate) {
-                // Strip time from backlog date to ensure calendar day logic
                 const d = new Date(backlogDate);
                 d.setHours(0,0,0,0);
                 const ts = d.getTime();
@@ -390,7 +392,6 @@
         }
 
         function recordChange(key, type) {
-            // Strip time from current date to ensure calendar day logic
             const now = new Date(); 
             now.setHours(0,0,0,0); 
             const ts = now.getTime();
@@ -399,7 +400,6 @@
             const goal = localStorage.getItem(key + '_goal');
             
             if (goal) {
-                // Expiry is calculated as Start of Day + Goal Days
                 localStorage.setItem(key + '_expiry', ts + (parseInt(goal) * 86400000));
             } else {
                 localStorage.removeItem(key + '_expiry');
@@ -413,7 +413,6 @@
         }
 
         function updateUI() {
-            // Strip time from comparison date to ensure calendar day logic
             const nowObj = new Date();
             nowObj.setHours(0,0,0,0);
             const now = nowObj.getTime();
@@ -426,9 +425,10 @@
                 el.className = 'stock-count ' + (needleStock === 0 ? 'stock-out' : (needleStock <= nLow ? 'stock-low' : ''));
             });
 
-            ['rc', 'bc', 'strip', 'lancet'].forEach(key => {
-                const val = parseInt(localStorage.getItem(key + '_stock') || 0);
-                const low = parseInt(localStorage.getItem(key + '_low_alert') || (key === 'strip' ? 10 : 3));
+            ['rc', 'bc', 'strip', 'lc'].forEach(key => {
+                const stockKey = key === 'lc' ? 'lancet' : key;
+                const val = parseInt(localStorage.getItem(stockKey + '_stock') || 0);
+                const low = parseInt(localStorage.getItem(stockKey + '_low_alert') || (key === 'strip' ? 10 : 3));
                 const el = document.getElementById(key + '-stock-main');
                 if(el) {
                     el.innerText = val;
@@ -454,7 +454,8 @@
                         display.classList.remove('expired');
                     }
                 }
-                const prodExp = localStorage.getItem((key === 'rn' || key === 'bn' ? 'needle_common' : (key === 'lc' ? 'lancet' : key)) + '_product_expiry');
+                const prodKey = (key === 'rn' || key === 'bn' ? 'needle_common' : (key === 'lc' ? 'lancet' : key));
+                const prodExp = localStorage.getItem(prodKey + '_product_expiry');
                 if(expInfo) expInfo.innerText = prodExp ? `Exp: ${new Date(prodExp).toLocaleDateString([], {month:'short', day:'numeric'})}` : "Exp: Never";
                 const ts = localStorage.getItem(key + '_last_timestamp');
                 const tsEl = document.getElementById(key + '-last');

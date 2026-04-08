@@ -17,22 +17,7 @@
 
         /* HEADER */
         .container { text-align: center; margin-bottom: 10px; margin-top: 20px; width: 100%; display: flex; flex-direction: column; align-items: center; }
-        
-        .header-top { 
-            display: flex; 
-            flex-direction: column; 
-            align-items: center; 
-            gap: 12px; 
-            justify-content: center; 
-        }
-
-        /* Container for side-by-side buttons */
-        .header-controls {
-            display: flex;
-            gap: 10px;
-            justify-content: center;
-        }
-
+        .header-top { display: flex; align-items: center; gap: 15px; justify-content: center; }
         h1 { 
             font-size: 2.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px;
             background: linear-gradient(to bottom, #fff, #888);
@@ -40,17 +25,14 @@
             line-height: 1; cursor: pointer;
         }
         
-        .toggle-btn {
+        .ai-toggle-btn {
             background: #1a1a1a; border: 1px solid #333; color: #555;
-            padding: 8px 16px; border-radius: 12px; font-size: 0.65rem; font-weight: 900;
+            padding: 8px 12px; border-radius: 12px; font-size: 0.6rem; font-weight: 900;
             cursor: pointer; transition: 0.3s;
-            display: flex; align-items: center; gap: 5px;
         }
-        .toggle-btn.active { color: #007aff; border-color: #007aff; box-shadow: 0 0 10px rgba(0, 122, 255, 0.2); }
-        /* Special active color for alerts */
-        .toggle-btn.alert-active { color: #ffcc00; border-color: #ffcc00; box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); }
+        .ai-toggle-btn.active { color: #007aff; border-color: #007aff; box-shadow: 0 0 10px rgba(0, 122, 255, 0.2); }
 
-        .age-line { font-size: 0.8rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-top: 12px; cursor: pointer; }
+        .age-line { font-size: 0.8rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-top: 8px; cursor: pointer; }
         
         #dashboard-stars { 
             display: flex; justify-content: center; gap: 5px; margin-top: 10px; cursor: pointer;
@@ -85,9 +67,7 @@
         #ai-sensor-msg { font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; margin-top: 15px; background: rgba(255,255,255,0.03); padding: 8px 15px; border-radius: 100px; display: inline-block; }
 
         /* ALERT SYSTEM */
-        #alert-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; transition: all 0.3s ease; overflow: hidden; }
-        #alert-container.hidden { height: 0; margin-bottom: 0; opacity: 0; pointer-events: none; }
-        
+        #alert-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; }
         .alert-tile { border-radius: 22px; padding: 16px; display: flex; align-items: center; gap: 15px; border: 1px solid rgba(255,255,255,0.05); text-decoration: none; animation: slideDown 0.4s ease-out; cursor: pointer; }
         .theme-red { background: rgba(255, 77, 77, 0.15); border-color: #ff4d4d; color: #ff4d4d; }
         .theme-yellow { background: rgba(255, 204, 0, 0.15); border-color: #ffcc00; color: #ffcc00; }
@@ -128,11 +108,8 @@
 
     <div class="container">
         <div class="header-top">
-            <div class="header-controls">
-                <button id="ai-toggle-btn" class="toggle-btn" onclick="toggleAISensor()">🤖 AI</button>
-                <button id="alert-toggle-btn" class="toggle-btn" onclick="toggleAlerts()">🔔 ALERT</button>
-            </div>
             <h1 id="user-name" onclick="editName()">Pragathi Suresh</h1>
+            <button id="ai-toggle-btn" class="ai-toggle-btn" onclick="toggleAISensor()">🤖 AI</button>
         </div>
         <div id="age-display" class="age-line" onclick="triggerAgePicker()">Set Age</div>
         <div id="dashboard-stars" onclick="location.href='./stats.html'">
@@ -216,14 +193,6 @@
             const isHidden = tile.classList.toggle('hidden');
             localStorage.setItem('ai_sensor_hidden', isHidden);
             btn.classList.toggle('active', !isHidden);
-        }
-
-        function toggleAlerts() {
-            const container = document.getElementById('alert-container');
-            const btn = document.getElementById('alert-toggle-btn');
-            const isHidden = container.classList.toggle('hidden');
-            localStorage.setItem('alerts_hidden', isHidden);
-            btn.classList.toggle('alert-active', !isHidden);
         }
 
         function calculateIOB(logs) {
@@ -452,15 +421,9 @@
                 if (m < 0) { y--; m += 12; }
                 document.getElementById('age-display').innerText = `${y} Years, ${m} Months`;
             }
-            
-            const isAIHidden = localStorage.getItem('ai_sensor_hidden') === 'true';
-            document.getElementById('sensor-hero-tile').classList.toggle('hidden', isAIHidden);
-            document.getElementById('ai-toggle-btn').classList.toggle('active', !isAIHidden);
-
-            const areAlertsHidden = localStorage.getItem('alerts_hidden') === 'true';
-            document.getElementById('alert-container').classList.toggle('hidden', areAlertsHidden);
-            document.getElementById('alert-toggle-btn').classList.toggle('alert-active', !areAlertsHidden);
-            
+            const isHidden = localStorage.getItem('ai_sensor_hidden') === 'true';
+            document.getElementById('sensor-hero-tile').classList.toggle('hidden', isHidden);
+            document.getElementById('ai-toggle-btn').classList.toggle('active', !isHidden);
             syncAllData();
         }
 
