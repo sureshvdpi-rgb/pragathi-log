@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Medical Stats</title>
+    <title>Medical Stats | Pragathi Log</title>
     <style>
         * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
         
@@ -27,66 +27,116 @@
         .stat-card {
             background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
             border: 1px solid rgba(255,255,255,0.05);
-            border-radius: 28px; padding: 22px;
+            border-radius: 28px; padding: 20px;
             box-shadow: 0 10px 20px rgba(0,0,0,0.3);
+            position: relative;
+            overflow: hidden;
         }
 
-        .card-title { font-size: 0.75rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; margin-bottom: 12px; }
+        .card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .card-title { font-size: 0.8rem; color: #aaa; text-transform: uppercase; font-weight: 800; letter-spacing: 1.5px; }
 
-        .pie-wrapper {
+        /* ENHANCED STAR RATING STYLE */
+        .rating-hero {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 10px 0;
+            background: radial-gradient(circle at center, rgba(0, 255, 170, 0.05) 0%, transparent 70%);
+        }
+
+        .stars-outer {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 15px;
+            filter: drop-shadow(0 0 10px rgba(0,0,0,0.5));
+        }
+
+        .star-item {
+            font-size: 2.2rem;
+            color: rgba(255,255,255,0.05);
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             position: relative;
-            width: 260px;
-            height: 260px;
-            margin: 20px auto;
-            perspective: 1000px;
         }
-        .pie-chart {
-            width: 100%;
-            height: 100%;
-            border-radius: 50%;
-            background: conic-gradient(#333 0% 100%);
-            position: relative;
-            transform: rotateX(25deg);
-            box-shadow: 0 15px 0 #000, 0 20px 30px rgba(0,0,0,0.5);
-            transition: 0.5s ease;
+
+        .star-item.active {
+            color: #00ffaa;
+            text-shadow: 0 0 15px rgba(0, 255, 170, 0.6), 0 0 30px rgba(0, 255, 170, 0.2);
+            transform: scale(1.1);
         }
-        .pie-labels-container {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            transform: rotateX(25deg);
-        }
-        .pie-label {
-            position: absolute;
-            font-size: 0.55rem;
-            font-weight: 900;
-            color: #000;
-            transform: translate(-50%, -50%);
+
+        .tir-badge {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 8px 20px;
+            border-radius: 100px;
             text-align: center;
-            line-height: 1.1;
-            width: 80px;
-            text-shadow: 0 1px 0 rgba(255,255,255,0.2);
+            backdrop-filter: blur(5px);
         }
 
-        .star-container { display: flex; align-items: center; gap: 15px; margin-top: 5px; }
-        .stars { display: flex; gap: 4px; font-size: 1.8rem; color: #333; }
-        .star-active { color: #00ffaa; text-shadow: 0 0 10px rgba(0, 255, 170, 0.3); }
-        .tir-info { flex: 1; }
-        .tir-info p { font-size: 0.9rem; font-weight: 800; margin-bottom: 2px; }
-        .tir-info span { font-size: 0.65rem; color: #666; font-weight: 700; text-transform: uppercase; }
+        .tir-value {
+            display: block;
+            font-size: 1.4rem;
+            font-weight: 900;
+            color: #fff;
+            line-height: 1;
+        }
 
-        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; height: 140px; margin-top: 25px; padding-bottom: 25px; width: 100%; }
+        .tir-desc {
+            font-size: 0.6rem;
+            font-weight: 800;
+            color: #00ffaa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+
+        .status-msg {
+            margin-top: 15px;
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: #eee;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            text-align: center;
+            line-height: 1.4;
+            max-width: 80%;
+        }
+
+        /* PILLAR COMPARISON */
+        .comparison-wrapper { display: flex; justify-content: space-between; gap: 8px; margin-top: 10px; }
+        .pillar-container { display: flex; flex-direction: column; align-items: center; flex: 1; }
+        .pillar-label-main { font-size: 0.65rem; font-weight: 900; color: #007aff; text-transform: uppercase; margin-bottom: 12px; text-align: center; }
+        .pillar-wrapper { display: flex; align-items: stretch; height: 220px; gap: 6px; padding: 5px 0; width: 100%; }
+        .pillar-bar { width: 20px; background: #333; border-radius: 100px; display: flex; flex-direction: column-reverse; overflow: hidden; border: 1px solid rgba(255,255,255,0.1); }
+        .pillar-segment { width: 100%; transition: height 1s cubic-bezier(0.4, 0, 0.2, 1); }
+        .pillar-labels { display: flex; flex-direction: column-reverse; justify-content: flex-start; flex: 1; }
+        .pillar-label-item { display: flex; flex-direction: column; justify-content: center; transition: height 1s ease-in-out; overflow: hidden; border-left: 2px dashed rgba(255,255,255,0.1); padding-left: 5px; }
+        .label-pct { font-size: 0.75rem; font-weight: 900; }
+        .label-text { font-size: 0.5rem; font-weight: 800; text-transform: uppercase; color: #777; white-space: nowrap; }
+
+        /* BAR CHARTS */
+        .nav-controls { display: flex; align-items: center; gap: 12px; }
+        .nav-btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #007aff; width: 32px; height: 32px; border-radius: 50%; font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center; cursor: pointer; transition: all 0.2s;
+        }
+        .nav-btn:active { transform: scale(0.9); background: rgba(0, 122, 255, 0.2); }
+        .nav-btn:disabled { color: #333; border-color: transparent; cursor: default; }
+
+        .bar-chart { display: flex; align-items: flex-end; justify-content: space-between; gap: 4px; height: 140px; padding-bottom: 25px; width: 100%; }
         .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; height: 100%; position: relative; }
         .bar-pair { display: flex; align-items: flex-end; gap: 2px; height: 100%; width: 100%; justify-content: center; }
-        .bar { flex: 1; background: #007aff; border-radius: 3px 3px 1px 1px; position: relative; min-height: 2px; transition: height 0.5s ease; width: 100%; }
-        .bar-value { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.5rem; font-weight: 900; color: #fff; }
+        .bar { flex: 1; background: #007aff; border-radius: 4px; position: relative; min-height: 2px; transition: height 0.6s cubic-bezier(0.34, 1.56, 0.64, 1); width: 100%; }
+        .bar-value { position: absolute; top: -18px; left: 50%; transform: translateX(-50%); font-size: 0.55rem; font-weight: 900; color: #fff; }
         .group-label { position: absolute; bottom: -20px; font-size: 0.5rem; color: #666; font-weight: 800; text-transform: uppercase; white-space: nowrap; }
 
-        .big-val { font-size: 2.4rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
-        .sub-label { font-size: 0.65rem; color: #777; font-weight: 700; text-transform: uppercase; }
+        .big-val { font-size: 2.6rem; font-weight: 900; line-height: 1; margin-bottom: 4px; }
+        .sub-label { font-size: 0.7rem; color: #777; font-weight: 700; text-transform: uppercase; }
 
         .back-nav { position: fixed; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 1000;}
-        .back-btn { background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #fff; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; padding: 16px 40px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; }
+        .back-btn { background-color: rgba(255, 255, 255, 0.05); backdrop-filter: blur(10px); color: #fff; text-decoration: none; font-size: 0.75rem; text-transform: uppercase; letter-spacing: 2px; font-weight: 700; padding: 18px 45px; border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 100px; }
     </style>
 </head>
 <body>
@@ -111,33 +161,58 @@
         </div>
 
         <div class="stat-card">
-            <div class="card-title">Time In Range Score</div>
-            <div class="star-container">
-                <div class="stars" id="star-rating">
-                    <span>★</span><span>★</span><span>★</span><span>★</span><span>★</span>
+            <div class="card-title">Time In Range Score (90d)</div>
+            <div class="rating-hero">
+                <div class="stars-outer" id="star-rating">
+                    <span class="star-item">★</span>
+                    <span class="star-item">★</span>
+                    <span class="star-item">★</span>
+                    <span class="star-item">★</span>
+                    <span class="star-item">★</span>
                 </div>
-                <div class="tir-info">
-                    <p id="tir-status">Analyzing...</p>
-                    <span id="tir-percent">0% TIR</span>
+                <div class="tir-badge">
+                    <span class="tir-value" id="tir-percent">0%</span>
+                    
+                </div>
+                <div class="status-msg" id="tir-status">Analyzing...</div>
+            </div>
+        </div>
+
+        <div class="stat-card">
+            <div class="card-header"><div class="card-title">Distribution Comparison</div></div>
+            <div class="comparison-wrapper">
+                <div class="pillar-container">
+                    <div class="pillar-label-main" style="color:#00ffaa">Today</div>
+                    <div class="pillar-wrapper"><div class="pillar-bar" id="bar-today"></div><div class="pillar-labels" id="labels-today"></div></div>
+                </div>
+                <div class="pillar-container">
+                    <div class="pillar-label-main">7 Days</div>
+                    <div class="pillar-wrapper"><div class="pillar-bar" id="bar-7"></div><div class="pillar-labels" id="labels-7"></div></div>
+                </div>
+                <div class="pillar-container">
+                    <div class="pillar-label-main">30 Days</div>
+                    <div class="pillar-wrapper"><div class="pillar-bar" id="bar-30"></div><div class="pillar-labels" id="labels-30"></div></div>
+                </div>
+                <div class="pillar-container">
+                    <div class="pillar-label-main">90 Days</div>
+                    <div class="pillar-wrapper"><div class="pillar-bar" id="bar-90"></div><div class="pillar-labels" id="labels-90"></div></div>
                 </div>
             </div>
         </div>
 
         <div class="stat-card">
-            <div class="card-title">Glucose Distribution</div>
-            <div class="pie-wrapper">
-                <div class="pie-chart" id="glucose-pie"></div>
-                <div class="pie-labels-container" id="pie-labels"></div>
-            </div>
-        </div>
-
-        <div class="stat-card">
-            <div class="card-title">7-Day Avg by Meal</div>
+            <div class="card-header"><div class="card-title">Avg By Meal (7d)</div></div>
             <div class="bar-chart" id="category-bars"></div>
         </div>
 
         <div class="stat-card">
-            <div class="card-title">Last 7 Days (Avg)</div>
+            <div class="card-header">
+                <div class="card-title">Daily Averages</div>
+                <div class="nav-controls">
+                    <button class="nav-btn" onclick="moveDailyRange(7)">◀</button>
+                    <button class="nav-btn" id="next-btn" onclick="moveDailyRange(-7)" disabled>▶</button>
+                </div>
+            </div>
             <div class="bar-chart" id="weekly-bars"></div>
         </div>
     </div>
@@ -145,81 +220,101 @@
     <div class="back-nav"><a href="./index.html" class="back-btn">← Home</a></div>
 
     <script>
+        let dailyOffset = 0;
         function getLogs() { return JSON.parse(localStorage.getItem('user_logs') || '[]'); }
 
-        function calculateStats() {
-            const logs = getLogs().filter(l => l.glucose !== '--');
-            if (logs.length === 0) return;
-            const values = logs.map(l => parseFloat(l.glucose));
-            
-            const avg = values.reduce((a, b) => a + b, 0) / values.length;
-            document.getElementById('avg-val').innerText = Math.round(avg);
-            document.getElementById('hba1c-val').innerText = ((avg + 46.7) / 28.7).toFixed(1) + "%";
-
-            const total = values.length;
-            const counts = {
-                low: values.filter(v => v < 70).length,
-                tir: values.filter(v => v >= 70 && v <= 180).length,
-                high: values.filter(v => v > 180 && v <= 240).length,
-                vhigh: values.filter(v => v > 240).length
-            };
-
-            updatePieChart(counts, total);
-            updateStarRating(Math.round((counts.tir / total) * 100));
-            renderWeeklyChart(logs);
-            renderCategoryChart(logs);
+        function moveDailyRange(offsetChange) {
+            dailyOffset += offsetChange;
+            if (dailyOffset < 0) dailyOffset = 0;
+            document.getElementById('next-btn').disabled = (dailyOffset === 0);
+            renderWeeklyChart(getLogs());
         }
 
-        function updatePieChart(counts, total) {
-            const data = [
-                { label: 'LOW', range: '<70', val: counts.low, color: '#ffcc00' },
-                { label: 'IN RANGE', range: '70-180', val: counts.tir, color: '#00ffaa' },
-                { label: 'ELEVATED', range: '181-240', val: counts.high, color: '#ff9500' },
-                { label: 'HIGH', range: '>240', val: counts.vhigh, color: '#ff4d4d' }
-            ];
-
-            let currentPercent = 0;
-            let gradientStr = "conic-gradient(";
-            const labelContainer = document.getElementById('pie-labels');
-            labelContainer.innerHTML = '';
-
-            data.forEach((item, index) => {
-                const percent = (item.val / total) * 100;
-                if (percent > 0) {
-                    const start = currentPercent;
-                    const end = currentPercent + percent;
-                    gradientStr += `${item.color} ${start}% ${end}%${index < data.length - 1 ? ',' : ''}`;
-                    
-                    if (percent > 8) { 
-                        const midAngle = ((start + (percent / 2)) / 100) * 2 * Math.PI - (Math.PI / 2);
-                        const radius = 75; 
-                        const x = 130 + radius * Math.cos(midAngle);
-                        const y = 130 + radius * Math.sin(midAngle);
-                        
-                        const label = document.createElement('div');
-                        label.className = 'pie-label';
-                        label.style.left = x + 'px';
-                        label.style.top = y + 'px';
-                        label.innerHTML = `${item.label}<br>(${item.range})<br>${Math.round(percent)}%`;
-                        labelContainer.appendChild(label);
+        function calculateStats() {
+            const allLogs = getLogs().filter(l => l.glucose !== '--');
+            if (allLogs.length === 0) return;
+            
+            [7, 30, 90].forEach(days => {
+                const cutoff = Date.now() - (days * 86400000);
+                const filtered = allLogs.filter(l => new Date(l.timestamp).getTime() >= cutoff);
+                if (filtered.length > 0) {
+                    const counts = getCounts(filtered);
+                    renderPillar(`bar-${days}`, `labels-${days}`, counts, filtered.length);
+                    if (days === 30) {
+                        const values = filtered.map(l => parseFloat(l.glucose));
+                        const avg = values.reduce((a, b) => a + b, 0) / values.length;
+                        document.getElementById('avg-val').innerText = Math.round(avg);
+                        document.getElementById('hba1c-val').innerText = ((avg + 46.7) / 28.7).toFixed(1) + "%";
                     }
-                    currentPercent = end;
+                    if (days === 90) {
+                        updateStarRating(Math.round((counts.tir / filtered.length) * 100));
+                    }
                 }
             });
 
-            if (currentPercent === 0) gradientStr += "#333 0% 100%";
-            gradientStr += ")";
-            document.getElementById('glucose-pie').style.background = gradientStr;
+            const todayStr = new Date().toISOString().split('T')[0];
+            const todayLogs = allLogs.filter(l => l.timestamp.startsWith(todayStr));
+            if (todayLogs.length > 0) renderPillar('bar-today', 'labels-today', getCounts(todayLogs), todayLogs.length);
+
+            renderWeeklyChart(allLogs);
+            renderCategoryChart(allLogs);
+        }
+
+        function getCounts(logs) {
+            return {
+                low: logs.filter(v => parseFloat(v.glucose) < 70).length,
+                tir: logs.filter(v => parseFloat(v.glucose) >= 70 && parseFloat(v.glucose) <= 180).length,
+                high: logs.filter(v => parseFloat(v.glucose) > 180 && parseFloat(v.glucose) <= 240).length,
+                vhigh: logs.filter(v => parseFloat(v.glucose) > 240).length
+            };
+        }
+
+        function renderPillar(barId, labelId, counts, total) {
+            const barBox = document.getElementById(barId);
+            const labelBox = document.getElementById(labelId);
+            barBox.innerHTML = ''; labelBox.innerHTML = '';
+            const data = [{ label: 'Low', color: '#ffcc00', val: counts.low }, { label: 'TIR', color: '#00ffaa', val: counts.tir }, { label: 'High', color: '#ff9500', val: counts.high }, { label: 'V.H', color: '#ff4d4d', val: counts.vhigh }];
+            data.forEach(item => {
+                const percent = (item.val / total) * 100;
+                const segment = document.createElement('div');
+                segment.className = 'pillar-segment';
+                segment.style.height = percent + '%';
+                segment.style.backgroundColor = item.color;
+                barBox.appendChild(segment);
+                const labelItem = document.createElement('div');
+                labelItem.className = 'pillar-label-item';
+                labelItem.style.height = percent + '%';
+                if (percent > 8) labelItem.innerHTML = `<span class="label-pct" style="color: ${item.color}">${Math.round(percent)}%</span><span class="label-text">${item.label}</span>`;
+                labelBox.appendChild(labelItem);
+            });
         }
 
         function updateStarRating(tir) {
-            const stars = document.getElementById('star-rating').children;
-            document.getElementById('tir-percent').innerText = tir + "% TIME IN RANGE";
+            const starElements = document.querySelectorAll('.star-item');
+            document.getElementById('tir-percent').innerText = tir + "%";
+            
+            // Star Lighting Logic
             let starCount = Math.ceil(tir / 20);
-            for (let i = 0; i < 5; i++) {
-                stars[i].className = i < starCount ? 'star-active' : '';
+            starElements.forEach((star, index) => {
+                if (index < starCount) {
+                    setTimeout(() => star.classList.add('active'), index * 100);
+                } else {
+                    star.classList.remove('active');
+                }
+            });
+
+            // Message Logic based on user criteria
+            const status = document.getElementById('tir-status');
+            if (tir >= 70) {
+                status.innerText = "Doing good";
+                status.style.color = "#00ffaa";
+            } else if (tir >= 50) {
+                status.innerText = "Needs Attention";
+                status.style.color = "#ffcc00";
+            } else {
+                status.innerText = "Follow Correct Dose insulin and Food control";
+                status.style.color = "#ff4d4d";
             }
-            document.getElementById('tir-status').innerText = tir >= 70 ? "Good Control" : "Needs Attention";
         }
 
         function createSingleBar(value) {
@@ -239,22 +334,20 @@
         function renderWeeklyChart(logs) {
             const container = document.getElementById('weekly-bars');
             container.innerHTML = '';
-            for (let i = 6; i >= 0; i--) {
+            for (let i = (dailyOffset + 6); i >= dailyOffset; i--) {
                 const d = new Date(); d.setDate(d.getDate() - i);
                 const dayStr = d.toISOString().split('T')[0];
                 const dayLogs = logs.filter(l => l.timestamp.startsWith(dayStr));
                 const avg = dayLogs.length > 0 ? dayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / dayLogs.length : 0;
-                
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'bar-group';
                 const pairDiv = document.createElement('div');
                 pairDiv.className = 'bar-pair';
                 pairDiv.appendChild(createSingleBar(avg));
                 groupDiv.appendChild(pairDiv);
-                
                 const label = document.createElement('span');
                 label.className = 'group-label';
-                label.innerText = dayStr.split('-')[2];
+                label.innerText = d.getDate() + "/" + (d.getMonth() + 1);
                 groupDiv.appendChild(label);
                 container.appendChild(groupDiv);
             }
@@ -263,29 +356,18 @@
         function renderCategoryChart(logs) {
             const container = document.getElementById('category-bars');
             container.innerHTML = '';
-            const sevenDaysAgoStr = new Date(Date.now() - 7 * 86400000).toISOString().split('T')[0];
-
-            const groups = [
-                { label: 'Morning', keys: ['Early Morning'] },
-                { label: 'Breakfast', keys: ['Before Breakfast', 'After Breakfast'] },
-                { label: 'Lunch', keys: ['Before Lunch', 'After Lunch'] },
-                { label: 'Snack', keys: ['Before Snack', 'After Snack'] },
-                { label: 'Dinner', keys: ['Before Dinner', 'After Dinner'] },
-                { label: 'Bed', keys: ['Bed Time'] }
-            ];
-
+            const cutoff = Date.now() - (7 * 86400000);
+            const groups = [{ label: 'Morning', keys: ['Early Morning'] }, { label: 'Breakfast', keys: ['Before Breakfast', 'After Breakfast'] }, { label: 'Lunch', keys: ['Before Lunch', 'After Lunch'] }, { label: 'Snack', keys: ['Before Snack', 'After Snack'] }, { label: 'Dinner', keys: ['Before Dinner', 'After Dinner'] }, { label: 'Bed', keys: ['Bed Time'] }];
             groups.forEach(g => {
                 const groupDiv = document.createElement('div');
                 groupDiv.className = 'bar-group';
                 const pairDiv = document.createElement('div');
                 pairDiv.className = 'bar-pair';
-
                 g.keys.forEach(key => {
-                    const catLogs = logs.filter(l => l.category === key && l.timestamp >= sevenDaysAgoStr);
+                    const catLogs = logs.filter(l => l.category === key && new Date(l.timestamp).getTime() >= cutoff && l.glucose !== '--');
                     const avg = catLogs.length > 0 ? catLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / catLogs.length : 0;
                     pairDiv.appendChild(createSingleBar(avg));
                 });
-
                 groupDiv.appendChild(pairDiv);
                 const label = document.createElement('span');
                 label.className = 'group-label';
@@ -294,7 +376,6 @@
                 container.appendChild(groupDiv);
             });
         }
-
         calculateStats();
     </script>
 </body>
