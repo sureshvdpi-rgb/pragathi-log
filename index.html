@@ -26,7 +26,6 @@
             justify-content: center; 
         }
 
-        /* Container for side-by-side buttons */
         .header-controls {
             display: flex;
             gap: 10px;
@@ -47,7 +46,6 @@
             display: flex; align-items: center; gap: 5px;
         }
         .toggle-btn.active { color: #007aff; border-color: #007aff; box-shadow: 0 0 10px rgba(0, 122, 255, 0.2); }
-        /* Special active color for alerts */
         .toggle-btn.alert-active { color: #ffcc00; border-color: #ffcc00; box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); }
 
         .age-line { font-size: 0.8rem; font-weight: 700; color: #666; text-transform: uppercase; letter-spacing: 2px; margin-top: 12px; cursor: pointer; }
@@ -229,11 +227,17 @@
         function calculateIOB(logs) {
             const now = Date.now();
             const actionTime = 4 * 60 * 60 * 1000; 
+            const reactionDelay = 15 * 60 * 1000; // 15 min delay for insulin onset
             let totalIOB = 0;
+            
             logs.filter(l => l.category !== 'Daily Basal' && l.insulin > 0).forEach(l => {
                 const logTime = new Date(l.timestamp).getTime();
-                const timePassed = now - logTime;
-                if (timePassed > 0 && timePassed < actionTime) totalIOB += l.insulin * (1 - (timePassed / actionTime));
+                const effectiveTime = logTime + reactionDelay; 
+                const timePassed = now - effectiveTime;
+                
+                if (timePassed > 0 && timePassed < actionTime) {
+                    totalIOB += l.insulin * (1 - (timePassed / actionTime));
+                }
             });
             return totalIOB;
         }
@@ -257,25 +261,49 @@
         }
 
         function calculateSmartPrediction(logs) {
-            const now = new Date();
-            const currentHour = now.getHours();
-            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-            const lastLog = logs.find(l => l.glucose && l.glucose !== '--');
-            if (!lastLog) return null;
+            const now = Date.now();
+            const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
+            const digestionDelay = 10 * 60 * 1000; // 10 min delay for food digestion
+            
+            const lastReadingLog = logs.find(l => l.glucose && l.glucose !== '--');
+            if (!lastReadingLog) return null;
+
+            const iob = calculateIOB(logs);
             const memory = calculateFoodMemory(logs);
-            const foodRise = memory ? memory.rise : 45;
+            
+            // Factor in food impact with delay logic
+            let foodImpact = 0;
+            const recentMealLog = logs.find(l => l.notes && (now - new Date(l.notes_timestamp || l.timestamp).getTime()) < (3 * 3600000));
+            
+            if (recentMealLog) {
+                const mealTime = new Date(recentMealLog.timestamp).getTime();
+                if (now > (mealTime + digestionDelay)) {
+                    foodImpact = memory ? memory.rise : 60; 
+                }
+            }
+
+            // Pattern-based adjustment
+            const currentHour = new Date().getHours();
             const similarTimeLogs = logs.filter(l => {
                 const logTime = new Date(l.timestamp);
                 return logTime.getTime() > thirtyDaysAgo && Math.abs(logTime.getHours() - currentHour) <= 1 && l.glucose !== '--';
             });
-            let timeAverageRise = 0;
+
+            let patternAdjustment = 0;
             if (similarTimeLogs.length > 0) {
                 const avgForTime = similarTimeLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / similarTimeLogs.length;
-                timeAverageRise = (avgForTime - parseFloat(lastLog.glucose)) * 0.3; 
+                patternAdjustment = (avgForTime - parseFloat(lastReadingLog.glucose)) * 0.2; 
             }
-            const iob = calculateIOB(logs);
-            const prediction = Math.round(parseFloat(lastLog.glucose) + foodRise + timeAverageRise - (iob * 45));
-            return { val: prediction > 35 ? prediction : "LOW", iob: iob, food: memory ? memory.food : "Trend", isTimeWeighted: similarTimeLogs.length > 0 };
+
+            const insulinSensitivity = 40;
+            const prediction = Math.round(parseFloat(lastReadingLog.glucose) + foodImpact + patternAdjustment - (iob * insulinSensitivity));
+
+            return { 
+                val: prediction > 40 ? prediction : "Check", 
+                iob: iob, 
+                food: memory ? memory.food : "Pattern", 
+                isTimeWeighted: similarTimeLogs.length > 0 
+            };
         }
 
         function refreshAlerts() {
@@ -286,18 +314,15 @@
             let logs = rawLogs ? JSON.parse(rawLogs) : [];
             logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
-            // 1. Insulin Alert
             const currentIOB = calculateIOB(logs);
             if (currentIOB > 0) addAlert("Insulin on Board", `${currentIOB.toFixed(1)} Units Active`, "💉", "theme-red", "./log.html");
 
-            // 2. Basal Alert
             const bTime = localStorage.getItem('user_basal_time') || "22:00"; 
             const todayStr = now.toISOString().split('T')[0];
             const target = new Date(todayStr + 'T' + bTime).getTime();
             const taken = logs.some(l => l.category === 'Daily Basal' && l.timestamp.startsWith(todayStr));
             if (!taken && target - now.getTime() <= 0) addAlert("Injection Due", "Basal dose overdue", "💉", "theme-blue", "./log.html");
 
-            // 3. Monitoring Alert (Restored: No test in 4+ hours)
             const lastReading = logs.find(l => l.glucose && l.glucose !== '--');
             if (lastReading) {
                 const lastTime = new Date(lastReading.timestamp).getTime();
@@ -306,16 +331,24 @@
                 }
             }
 
-            // 4. Backup Alert
             const lastBackup = localStorage.getItem('last_backup_date');
             if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > (7 * 24 * 60 * 60 * 1000)) {
                 addAlert("Security Alert", "Data backup due (7 Days)", "💾", "theme-blue", "javascript:exportData()");
             }
 
-            // 5. Supply Expiry Alerts
-            ['rn', 'bn', 'lc'].forEach(k => {
+            ['rn', 'bn', 'lc', 'rc', 'bc'].forEach(k => {
                 const exp = localStorage.getItem(k + '_expiry');
-                if (exp && now.getTime() >= parseInt(exp)) addAlert("Action Needed", `${k === 'lc' ? 'Lancet' : (k === 'rn' ? 'Rapid' : 'Basal') + ' Needle'} Expired`, "⏰", "theme-red", "./supply.html");
+                if (exp && now.getTime() >= parseInt(exp)) {
+                    let label = "";
+                    switch(k) {
+                        case 'rn': label = "Rapid Needle"; break;
+                        case 'bn': label = "Basal Needle"; break;
+                        case 'lc': label = "Lancet"; break;
+                        case 'rc': label = "Rapid Cartridge"; break;
+                        case 'bc': label = "Basal Cartridge"; break;
+                    }
+                    addAlert("Action Needed", `${label} Expired`, "⏰", "theme-red", "./supply.html");
+                }
             });
             refreshStockAlerts();
         }
@@ -346,7 +379,6 @@
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
-                // 1. Hero AI Sensor
                 const aiValEl = document.getElementById('ai-sensor-val');
                 const aiArrowEl = document.getElementById('ai-trend-arrow');
                 const aiMsgEl = document.getElementById('ai-sensor-msg');
@@ -362,7 +394,6 @@
                     aiMsgEl.innerText = `${predictionData.food.toUpperCase()}${predictionData.isTimeWeighted ? " + Pattern" : ""}`;
                 }
 
-                // 2. Log Tiles (Basal Timer & Last Reading)
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
                 if (last) {
                     document.getElementById('mini-last-bg').innerText = last.glucose;
@@ -384,7 +415,6 @@
                     else { const h = Math.floor(diff / 3600000); const m = Math.floor((diff % 3600000) / 60000); if(bTimerEl) bTimerEl.innerText = `${h}h ${m}m`; if(bStatusEl) bStatusEl.innerText = "Remaining"; }
                 }
 
-                // 3. Stats Tiles (Average & HbA1c)
                 if (todayLogs.length > 0) {
                     const avgToday = todayLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / todayLogs.length;
                     const avgEl = document.getElementById('mini-stat-avg');
@@ -398,7 +428,6 @@
                 }
             }
 
-            // Supply Sync
             document.getElementById('mini-stock-needle').innerText = localStorage.getItem('needle_common_stock') || 0;
             document.getElementById('mini-stock-rc').innerText = localStorage.getItem('rc_stock') || 0;
             document.getElementById('mini-stock-bc').innerText = localStorage.getItem('bc_stock') || 0;
