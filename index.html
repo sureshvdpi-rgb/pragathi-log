@@ -80,7 +80,7 @@
         .hero-main { display: flex; align-items: center; justify-content: center; width: 100%; }
         .forecast-box { flex: 1; text-align: center; }
         .forecast-val { font-weight: 900; line-height: 1; color: #fff; }
-        .forecast-time { font-size: 0.65rem; color: #555; font-weight: 800; margin-top: 5px; text-transform: uppercase; }
+        .forecast-time { font-size: 0.6rem; color: #555; font-weight: 800; margin-top: 5px; text-transform: uppercase; }
         .forecast-sep { width: 1px; height: 50px; background: rgba(255,255,255,0.1); margin: 0 15px; }
         
         #ai-sensor-msg { font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; margin-top: 15px; background: rgba(255,255,255,0.03); padding: 8px 15px; border-radius: 100px; display: inline-block; }
@@ -142,20 +142,21 @@
         <input type="date" id="birthdate-picker" style="display:none;" onchange="updateAge(this.value)">
         <div class="divider"></div>
 
+        <!-- SENSOR HERO TILE WITH 1H AND 2H FORECASTS -->
         <div id="sensor-hero-tile" onclick="location.href='./log.html'">
-            <div class="hero-label">Glucose Pattern Analysis</div>
+            <div class="hero-label">Pattern Forecast</div>
             <div class="hero-main">
                 <div class="forecast-box">
-                    <div id="ai-now-val" class="forecast-val" style="font-size: 3.5rem;">--</div>
-                    <div class="forecast-time">Current Est.</div>
+                    <div id="ai-1h-val" class="forecast-val" style="font-size: 3rem;">--</div>
+                    <div id="ai-1h-time" class="forecast-time">1 Hour</div>
                 </div>
                 <div class="forecast-sep" style="height: 60px;"></div>
                 <div class="forecast-box">
                     <div id="ai-2h-val" class="forecast-val" style="font-size: 2.2rem; opacity: 0.8;">--</div>
-                    <div id="ai-2h-time" class="forecast-time">After 2 Hours</div>
+                    <div id="ai-2h-time" class="forecast-time">2 Hours</div>
                 </div>
             </div>
-            <div id="ai-sensor-msg">Analyzing Current Trend...</div>
+            <div id="ai-sensor-msg">Analyzing Pattern...</div>
         </div>
     </div>
 
@@ -237,7 +238,7 @@
         function calculateIOB(logs) {
             const now = Date.now();
             const actionTime = 4 * 60 * 60 * 1000; 
-            const reactionDelay = 20 * 60 * 1000; // 20 min buffer for onset[cite: 2]
+            const reactionDelay = 20 * 60 * 1000; 
             let totalIOB = 0;
             
             logs.filter(l => l.category !== 'Daily Basal' && l.insulin > 0).forEach(l => {
@@ -263,7 +264,7 @@
             
             function projectValue(minutesForward) {
                 const targetTime = now + (minutesForward * 60 * 1000);
-                const reactionDelay = 20 * 60 * 1000; // Delay for insulin start[cite: 2]
+                const reactionDelay = 20 * 60 * 1000; 
 
                 let totalInsulinImpact = 0;
                 logs.filter(l => l.insulin > 0 && l.category !== 'Daily Basal').forEach(l => {
@@ -287,15 +288,17 @@
                 }
                 
                 const prediction = Math.round(baseGlucose + totalFoodImpact - (totalInsulinImpact * ISF));
-                return prediction < 40 ? "Low" : prediction; // Floor for safety[cite: 2]
+                return prediction < 40 ? "Low" : prediction; 
             }
 
-            const timeString2h = new Date(now + 2 * 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const time1h = new Date(now + 60 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const time2h = new Date(now + 120 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
             return {
-                valNow: projectValue(0),
+                val1h: projectValue(60),
                 val2h: projectValue(120),
-                time2h: timeString2h
+                time1h: time1h,
+                time2h: time2h
             };
         }
 
@@ -372,36 +375,42 @@
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
+                // SYNC FORECAST DATA
                 const predictionData = calculateSmartPrediction(logs);
                 if (predictionData) {
-                    const vNow = predictionData.valNow;
+                    const v1h = predictionData.val1h;
                     const v2h = predictionData.val2h;
                     
-                    const elNow = document.getElementById('ai-now-val');
+                    const el1h = document.getElementById('ai-1h-val');
                     const el2h = document.getElementById('ai-2h-val');
                     const elMsg = document.getElementById('ai-sensor-msg');
                     
-                    elNow.innerText = vNow;
+                    el1h.innerText = v1h;
                     el2h.innerText = v2h;
+                    document.getElementById('ai-1h-time').innerText = "At " + predictionData.time1h;
                     document.getElementById('ai-2h-time').innerText = "At " + predictionData.time2h;
                     
-                    if (v2h === "Low" || (typeof v2h === "number" && v2h < vNow - 10)) {
-                        elMsg.innerText = "Falling Pattern Detected";
+                    // Pattern Logic comparing 1H to 2H trend
+                    if (v2h === "Low" || (typeof v2h === "number" && typeof v1h === "number" && v2h < v1h - 5)) {
+                        elMsg.innerText = "Downward Trend Continues";
                         elMsg.style.color = "#ff4d4d";
-                    } else if (typeof v2h === "number" && v2h > vNow + 10) {
-                        elMsg.innerText = "Rising Pattern Detected";
+                    } else if (typeof v2h === "number" && typeof v1h === "number" && v2h > v1h + 5) {
+                        elMsg.innerText = "Upward Trend Continues";
                         elMsg.style.color = "#ffcc00";
                     } else {
-                        elMsg.innerText = "Stable Pattern";
+                        elMsg.innerText = "Steady Pattern Estimated";
                         elMsg.style.color = "#00ffaa";
                     }
 
-                    elNow.style.color = (vNow < 70) ? "#ffcc00" : (vNow > 180) ? "#ff4d4d" : "#00ffaa";
+                    // Coloring for 1H
+                    if (typeof v1h === "number") {
+                        el1h.style.color = (v1h < 70) ? "#ffcc00" : (v1h > 180) ? "#ff4d4d" : "#00ffaa";
+                    } else { el1h.style.color = "#ff4d4d"; }
+                    
+                    // Coloring for 2H
                     if (typeof v2h === "number") {
                         el2h.style.color = (v2h < 70) ? "#ffcc00" : (v2h > 180) ? "#ff4d4d" : "#00ffaa";
-                    } else {
-                        el2h.style.color = "#ff4d4d";
-                    }
+                    } else { el2h.style.color = "#ff4d4d"; }
                 }
 
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
