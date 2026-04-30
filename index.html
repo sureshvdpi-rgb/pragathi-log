@@ -77,9 +77,12 @@
         #sensor-hero-tile.hidden { height: 0; padding: 0; margin-bottom: 0; opacity: 0; border: none; pointer-events: none; }
 
         .hero-label { font-size: 0.75rem; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-        .hero-main { display: flex; align-items: center; justify-content: center; gap: 15px; }
-        #ai-sensor-val { font-size: 5.5rem; font-weight: 900; line-height: 1; color: #fff; }
-        #ai-trend-arrow { font-size: 3rem; color: #888; }
+        .hero-main { display: flex; align-items: center; justify-content: center; width: 100%; }
+        .forecast-box { flex: 1; text-align: center; }
+        .forecast-val { font-weight: 900; line-height: 1; color: #fff; }
+        .forecast-time { font-size: 0.65rem; color: #555; font-weight: 800; margin-top: 5px; text-transform: uppercase; }
+        .forecast-sep { width: 1px; height: 50px; background: rgba(255,255,255,0.1); margin: 0 15px; }
+        
         #ai-sensor-msg { font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; margin-top: 15px; background: rgba(255,255,255,0.03); padding: 8px 15px; border-radius: 100px; display: inline-block; }
 
         /* ALERT SYSTEM */
@@ -140,12 +143,19 @@
         <div class="divider"></div>
 
         <div id="sensor-hero-tile" onclick="location.href='./log.html'">
-            <div class="hero-label">AI Predicted Sensor</div>
+            <div class="hero-label">Glucose Pattern Analysis</div>
             <div class="hero-main">
-                <div id="ai-sensor-val">--</div>
-                <div id="ai-trend-arrow">→</div>
+                <div class="forecast-box">
+                    <div id="ai-now-val" class="forecast-val" style="font-size: 3.5rem;">--</div>
+                    <div class="forecast-time">Current Est.</div>
+                </div>
+                <div class="forecast-sep" style="height: 60px;"></div>
+                <div class="forecast-box">
+                    <div id="ai-2h-val" class="forecast-val" style="font-size: 2.2rem; opacity: 0.8;">--</div>
+                    <div id="ai-2h-time" class="forecast-time">After 2 Hours</div>
+                </div>
             </div>
-            <div id="ai-sensor-msg">Analyzing patterns...</div>
+            <div id="ai-sensor-msg">Analyzing Current Trend...</div>
         </div>
     </div>
 
@@ -227,7 +237,7 @@
         function calculateIOB(logs) {
             const now = Date.now();
             const actionTime = 4 * 60 * 60 * 1000; 
-            const reactionDelay = 15 * 60 * 1000; // 15 min delay for insulin onset
+            const reactionDelay = 20 * 60 * 1000; // 20 min buffer for onset[cite: 2]
             let totalIOB = 0;
             
             logs.filter(l => l.category !== 'Daily Basal' && l.insulin > 0).forEach(l => {
@@ -242,67 +252,50 @@
             return totalIOB;
         }
 
-        function calculateFoodMemory(logs) {
-            const currentLog = logs.find(l => l.notes && l.notes.length > 2);
-            if (!currentLog) return null;
-            const currentFood = currentLog.notes.toLowerCase().trim();
-            const thirtyDaysAgo = Date.now() - 30 * 24 * 60 * 60 * 1000;
-            const history = logs.filter(l => l.id !== currentLog.id && new Date(l.timestamp).getTime() > thirtyDaysAgo && l.notes && l.notes.toLowerCase().trim().includes(currentFood));
-            if (history.length === 0) return null;
-            let totalRise = 0, matchCount = 0;
-            history.forEach(pastLog => {
-                const afterMeal = logs.find(l => l.category.includes("After") && new Date(l.timestamp) > new Date(pastLog.timestamp) && (new Date(l.timestamp) - new Date(pastLog.timestamp)) < (3 * 3600000));
-                if (afterMeal && afterMeal.glucose !== '--' && pastLog.glucose !== '--') {
-                    totalRise += (parseFloat(afterMeal.glucose) - parseFloat(pastLog.glucose));
-                    matchCount++;
-                }
-            });
-            return matchCount > 0 ? { rise: (totalRise / matchCount), food: currentFood } : null;
-        }
-
         function calculateSmartPrediction(logs) {
             const now = Date.now();
-            const thirtyDaysAgo = now - 30 * 24 * 60 * 60 * 1000;
-            const digestionDelay = 10 * 60 * 1000; // 10 min delay for food digestion
-            
             const lastReadingLog = logs.find(l => l.glucose && l.glucose !== '--');
             if (!lastReadingLog) return null;
 
-            const iob = calculateIOB(logs);
-            const memory = calculateFoodMemory(logs);
+            const baseGlucose = parseFloat(lastReadingLog.glucose);
+            const ISF = 40; 
+            const foodRiseFactor = 60; 
             
-            // Factor in food impact with delay logic
-            let foodImpact = 0;
-            const recentMealLog = logs.find(l => l.notes && (now - new Date(l.notes_timestamp || l.timestamp).getTime()) < (3 * 3600000));
-            
-            if (recentMealLog) {
-                const mealTime = new Date(recentMealLog.timestamp).getTime();
-                if (now > (mealTime + digestionDelay)) {
-                    foodImpact = memory ? memory.rise : 60; 
+            function projectValue(minutesForward) {
+                const targetTime = now + (minutesForward * 60 * 1000);
+                const reactionDelay = 20 * 60 * 1000; // Delay for insulin start[cite: 2]
+
+                let totalInsulinImpact = 0;
+                logs.filter(l => l.insulin > 0 && l.category !== 'Daily Basal').forEach(l => {
+                    const logTime = new Date(l.timestamp).getTime();
+                    const effectiveTime = logTime + reactionDelay;
+                    const timePassed = targetTime - effectiveTime; 
+                    
+                    if (timePassed > 0 && timePassed < (4 * 3600000)) {
+                        totalInsulinImpact += parseFloat(l.insulin) * (timePassed / (4 * 3600000));
+                    }
+                });
+
+                let totalFoodImpact = 0;
+                const recentMeal = logs.find(l => l.notes && (targetTime - new Date(l.timestamp).getTime()) < (3 * 3600000));
+                if (recentMeal) {
+                    const mealTime = new Date(recentMeal.timestamp).getTime();
+                    const hoursSinceMeal = (targetTime - mealTime) / (60 * 60 * 1000);
+                    if (hoursSinceMeal > 0 && hoursSinceMeal < 3) {
+                        totalFoodImpact = foodRiseFactor * (hoursSinceMeal / 3);
+                    }
                 }
+                
+                const prediction = Math.round(baseGlucose + totalFoodImpact - (totalInsulinImpact * ISF));
+                return prediction < 40 ? "Low" : prediction; // Floor for safety[cite: 2]
             }
 
-            // Pattern-based adjustment
-            const currentHour = new Date().getHours();
-            const similarTimeLogs = logs.filter(l => {
-                const logTime = new Date(l.timestamp);
-                return logTime.getTime() > thirtyDaysAgo && Math.abs(logTime.getHours() - currentHour) <= 1 && l.glucose !== '--';
-            });
+            const timeString2h = new Date(now + 2 * 3600000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
 
-            let patternAdjustment = 0;
-            if (similarTimeLogs.length > 0) {
-                const avgForTime = similarTimeLogs.reduce((s, c) => s + parseFloat(c.glucose), 0) / similarTimeLogs.length;
-                patternAdjustment = (avgForTime - parseFloat(lastReadingLog.glucose)) * 0.2; 
-            }
-
-            const insulinSensitivity = 40;
-            const prediction = Math.round(parseFloat(lastReadingLog.glucose) + foodImpact + patternAdjustment - (iob * insulinSensitivity));
-
-            return { 
-                val: prediction > 40 ? prediction : "Check", 
-                iob: iob, 
-                food: memory ? memory.food : "Pattern", 
-                isTimeWeighted: similarTimeLogs.length > 0 
+            return {
+                valNow: projectValue(0),
+                val2h: projectValue(120),
+                time2h: timeString2h
             };
         }
 
@@ -379,19 +372,36 @@
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
                 
-                const aiValEl = document.getElementById('ai-sensor-val');
-                const aiArrowEl = document.getElementById('ai-trend-arrow');
-                const aiMsgEl = document.getElementById('ai-sensor-msg');
                 const predictionData = calculateSmartPrediction(logs);
-                if (predictionData && aiValEl) {
-                    aiValEl.innerText = predictionData.val;
-                    if (predictionData.val < 70) aiValEl.style.color = "#ffcc00"; 
-                    else if (predictionData.val > 180) aiValEl.style.color = "#ff4d4d";
-                    else aiValEl.style.color = "#00ffaa";
-                    if (predictionData.iob > 1.2) { aiArrowEl.innerText = "↓"; aiArrowEl.style.color = "#ff4d4d"; }
-                    else if (predictionData.iob > 0.4) { aiArrowEl.innerText = "↘"; aiArrowEl.style.color = "#ffcc00"; }
-                    else { aiArrowEl.innerText = "→"; aiArrowEl.style.color = "#666"; }
-                    aiMsgEl.innerText = `${predictionData.food.toUpperCase()}${predictionData.isTimeWeighted ? " + Pattern" : ""}`;
+                if (predictionData) {
+                    const vNow = predictionData.valNow;
+                    const v2h = predictionData.val2h;
+                    
+                    const elNow = document.getElementById('ai-now-val');
+                    const el2h = document.getElementById('ai-2h-val');
+                    const elMsg = document.getElementById('ai-sensor-msg');
+                    
+                    elNow.innerText = vNow;
+                    el2h.innerText = v2h;
+                    document.getElementById('ai-2h-time').innerText = "At " + predictionData.time2h;
+                    
+                    if (v2h === "Low" || (typeof v2h === "number" && v2h < vNow - 10)) {
+                        elMsg.innerText = "Falling Pattern Detected";
+                        elMsg.style.color = "#ff4d4d";
+                    } else if (typeof v2h === "number" && v2h > vNow + 10) {
+                        elMsg.innerText = "Rising Pattern Detected";
+                        elMsg.style.color = "#ffcc00";
+                    } else {
+                        elMsg.innerText = "Stable Pattern";
+                        elMsg.style.color = "#00ffaa";
+                    }
+
+                    elNow.style.color = (vNow < 70) ? "#ffcc00" : (vNow > 180) ? "#ff4d4d" : "#00ffaa";
+                    if (typeof v2h === "number") {
+                        el2h.style.color = (v2h < 70) ? "#ffcc00" : (v2h > 180) ? "#ff4d4d" : "#00ffaa";
+                    } else {
+                        el2h.style.color = "#ff4d4d";
+                    }
                 }
 
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
