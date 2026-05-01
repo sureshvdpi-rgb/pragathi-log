@@ -44,13 +44,12 @@
 
         .divider { width: 40px; height: 4px; background-color: #fff; margin: 15px auto; border-radius: 10px; opacity: 0.8; }
 
-        /* SENSOR HERO DISPLAY */
-        #sensor-hero-tile { 
+        .dial-container { 
             width: 100%; max-width: 420px; 
             background: #000; 
             border: 2px solid #333; 
             border-radius: 40px; 
-            padding: 30px 20px; 
+            padding: 40px 10px 20px; 
             text-align: center; 
             margin-bottom: 25px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -60,19 +59,47 @@
             align-items: center;
             transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             overflow: hidden;
+            position: relative;
         }
-        #sensor-hero-tile.hidden { height: 0; padding: 0; margin-bottom: 0; opacity: 0; border: none; pointer-events: none; }
+        .dial-container.hidden { height: 0; padding: 0; margin-bottom: 0; opacity: 0; border: none; pointer-events: none; }
 
-        .hero-label { font-size: 0.75rem; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 10px; }
-        .hero-main { display: flex; align-items: center; justify-content: center; width: 100%; }
-        .forecast-box { flex: 1; text-align: center; }
-        .forecast-val { font-weight: 900; line-height: 1; color: #fff; }
-        .forecast-time { font-size: 0.6rem; color: #555; font-weight: 800; margin-top: 5px; text-transform: uppercase; }
-        .forecast-sep { width: 1px; height: 50px; background: rgba(255,255,255,0.1); margin: 0 15px; }
+        /* REPLACED: Single indicator removed for distributed separators */
+        .dial-indicator { display: none; }
+
+        .dial-track { 
+            display: flex; 
+            gap: 0; /* Gap managed by item padding/borders */
+            transition: transform 0.6s ease; 
+            padding: 0 5px; 
+        }
         
+        .dial-item { 
+            min-width: 90px; 
+            text-align: center; 
+            opacity: 0.2; 
+            transform: scale(0.9); 
+            transition: 0.4s; 
+            padding: 0 5px;
+            /* MODIFIED: Added thin small vertical lines between values */
+            border-right: 1px solid rgba(255,255,255,0.1); 
+        }
+        .dial-item:last-child { border-right: none; }
+        .dial-item.active { opacity: 1; transform: scale(1.05); }
+
+        .hero-label { font-size: 0.65rem; color: #888; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; position: absolute; top: 15px; }
+        .dial-time { font-size: 0.6rem; font-weight: 800; color: #555; text-transform: uppercase; margin-bottom: 5px; }
+        
+        /* MODIFIED: Brighter forecast values */
+        .dial-val { 
+            font-size: 1.8rem; 
+            font-weight: 900; 
+            line-height: 1; 
+            color: #fff; 
+            text-shadow: 0 0 12px rgba(255, 255, 255, 0.4); 
+        }
+
         #ai-sensor-msg { font-size: 0.7rem; color: #555; text-transform: uppercase; font-weight: 800; margin-top: 15px; background: rgba(255,255,255,0.03); padding: 8px 15px; border-radius: 100px; display: inline-block; }
 
-        /* ALERT SYSTEM */
         #alert-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; transition: all 0.3s ease; overflow: hidden; }
         #alert-container.hidden { height: 0; margin-bottom: 0; opacity: 0; pointer-events: none; }
         
@@ -85,7 +112,6 @@
 
         @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* GRID TILES */
         .grid-row { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; width: 100%; max-width: 420px; margin-bottom: 15px; }
         .mini-tile {
             background: linear-gradient(145deg, #2a2a2a, #1e1e1e);
@@ -105,7 +131,6 @@
         .supply-val { color: #00ffaa; }
         .stats-val { color: #007aff; }
 
-        /* CONTROLS */
         .data-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 420px; }
         .control-btn { background: #1a1a1a; border: 1px solid #333; color: #888; padding: 18px; border-radius: 24px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
         .btn-report { grid-column: span 2; background: #007aff; color: #fff; border: none; }
@@ -129,18 +154,11 @@
         <input type="date" id="birthdate-picker" style="display:none;" onchange="updateAge(this.value)">
         <div class="divider"></div>
 
-        <div id="sensor-hero-tile" onclick="location.href='./log.html'">
+        <div class="dial-container" id="sensor-hero-tile" onclick="location.href='./log.html'">
             <div class="hero-label">Pattern Forecast</div>
-            <div class="hero-main">
-                <div class="forecast-box">
-                    <div id="ai-1h-val" class="forecast-val" style="font-size: 3rem;">--</div>
-                    <div id="ai-1h-time" class="forecast-time">1 Hour</div>
-                </div>
-                <div class="forecast-sep" style="height: 60px;"></div>
-                <div class="forecast-box">
-                    <div id="ai-2h-val" class="forecast-val" style="font-size: 2.2rem; opacity: 0.8;">--</div>
-                    <div id="ai-2h-time" class="forecast-time">2 Hours</div>
-                </div>
+            <div class="dial-indicator"></div>
+            <div class="dial-track" id="forecast-dial-track">
+                <!-- Generated by JS -->
             </div>
             <div id="ai-sensor-msg">Personalizing Forecast...</div>
         </div>
@@ -223,9 +241,7 @@
 
         function getDynamicISF() {
             const hour = new Date().getHours();
-            // Morning resistance
             if (hour >= 4 && hour < 10) return 30;
-            // Night sensitivity
             if (hour >= 18 || hour < 4) return 50;
             return 40;
         }
@@ -242,7 +258,6 @@
                 const timePassed = now - effectiveTime;
                 
                 if (timePassed > 0 && timePassed < actionTime) {
-                    // Using non-linear decay (more accurate peak at start)
                     const decay = Math.pow(1 - (timePassed / actionTime), 2);
                     totalIOB += l.insulin * decay;
                 }
@@ -282,56 +297,43 @@
             return outcomesFound > 0 ? (totalShift / outcomesFound) : 0;
         }
 
-        function calculateSmartPrediction(logs) {
+        function projectValue(minutesForward, logs) {
             const now = Date.now();
             const lastReadingLog = logs.find(l => l.glucose && l.glucose !== '--');
-            if (!lastReadingLog) return null;
+            if (!lastReadingLog) return "--";
 
             const baseGlucose = parseFloat(lastReadingLog.glucose);
             const ISF = getDynamicISF();
             const foodRiseFactor = 60; 
             
-            function projectValue(minutesForward) {
-                const targetTime = now + (minutesForward * 60 * 1000);
-                const reactionDelay = 20 * 60 * 1000; 
+            const targetTime = now + (minutesForward * 60 * 1000);
+            const reactionDelay = 20 * 60 * 1000; 
 
-                let totalInsulinImpact = 0;
-                logs.filter(l => l.insulin > 0 && l.category !== 'Daily Basal').forEach(l => {
-                    const logTime = new Date(l.timestamp).getTime();
-                    const effectiveTime = logTime + reactionDelay;
-                    const timePassed = targetTime - effectiveTime; 
-                    if (timePassed > 0 && timePassed < (4 * 3600000)) {
-                        let impact = parseFloat(l.insulin) * (timePassed / (4 * 3600000));
-                        // Increase impact if activity notes found
-                        if (l.notes && /walk|gym|work|run/i.test(l.notes)) impact *= 1.2;
-                        totalInsulinImpact += impact;
-                    }
-                });
-
-                let totalFoodImpact = 0;
-                const recentMeal = logs.find(l => l.notes && (targetTime - new Date(l.timestamp).getTime()) < (3 * 3600000));
-                if (recentMeal) {
-                    const mealTime = new Date(recentMeal.timestamp).getTime();
-                    const hoursSinceMeal = (targetTime - mealTime) / (60 * 60 * 1000);
-                    if (hoursSinceMeal > 0 && hoursSinceMeal < 3) {
-                        totalFoodImpact = foodRiseFactor * (hoursSinceMeal / 3);
-                    }
+            let totalInsulinImpact = 0;
+            logs.filter(l => l.insulin > 0 && l.category !== 'Daily Basal').forEach(l => {
+                const logTime = new Date(l.timestamp).getTime();
+                const effectiveTime = logTime + reactionDelay;
+                const timePassed = targetTime - effectiveTime; 
+                if (timePassed > 0 && timePassed < (4 * 3600000)) {
+                    let impact = parseFloat(l.insulin) * (timePassed / (4 * 3600000));
+                    if (l.notes && /walk|gym|work|run/i.test(l.notes)) impact *= 1.2;
+                    totalInsulinImpact += impact;
                 }
+            });
 
-                const learnedOffset = getLearnedOffset(logs, minutesForward);
-                const prediction = Math.round(baseGlucose + totalFoodImpact + learnedOffset - (totalInsulinImpact * ISF));
-                return prediction < 40 ? "Low" : prediction; 
+            let totalFoodImpact = 0;
+            const recentMeal = logs.find(l => l.notes && (targetTime - new Date(l.timestamp).getTime()) < (3 * 3600000));
+            if (recentMeal) {
+                const mealTime = new Date(recentMeal.timestamp).getTime();
+                const hoursSinceMeal = (targetTime - mealTime) / (60 * 60 * 1000);
+                if (hoursSinceMeal > 0 && hoursSinceMeal < 3) {
+                    totalFoodImpact = foodRiseFactor * (hoursSinceMeal / 3);
+                }
             }
 
-            const time1h = new Date(now + 60 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-            const time2h = new Date(now + 120 * 60000).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-
-            return {
-                val1h: projectValue(60),
-                val2h: projectValue(120),
-                time1h: time1h,
-                time2h: time2h
-            };
+            const learnedOffset = getLearnedOffset(logs, minutesForward);
+            const prediction = Math.round(baseGlucose + totalFoodImpact + learnedOffset - (totalInsulinImpact * ISF));
+            return prediction < 40 ? "Low" : prediction; 
         }
 
         function refreshAlerts() {
@@ -406,35 +408,45 @@
 
             if (logs.length > 0) {
                 logs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-                const predictionData = calculateSmartPrediction(logs);
-                if (predictionData) {
-                    const v1h = predictionData.val1h;
-                    const v2h = predictionData.val2h;
-                    const el1h = document.getElementById('ai-1h-val');
-                    const el2h = document.getElementById('ai-2h-val');
-                    const elMsg = document.getElementById('ai-sensor-msg');
-                    
-                    el1h.innerText = v1h;
-                    el2h.innerText = v2h;
-                    document.getElementById('ai-1h-time').innerText = "At " + predictionData.time1h;
-                    document.getElementById('ai-2h-time').innerText = "At " + predictionData.time2h;
-                    
-                    if (v2h === "Low" || (typeof v2h === "number" && typeof v1h === "number" && v2h < v1h - 5)) {
-                        elMsg.innerText = "Dynamic Trend: Falling";
-                        elMsg.style.color = "#ff4d4d";
-                    } else if (typeof v2h === "number" && typeof v1h === "number" && v2h > v1h + 5) {
-                        elMsg.innerText = "Dynamic Trend: Rising";
-                        elMsg.style.color = "#ffcc00";
-                    } else {
-                        elMsg.innerText = "Learned Habits: Steady";
-                        elMsg.style.color = "#00ffaa";
-                    }
+                
+                const track = document.getElementById('forecast-dial-track');
+                const elMsg = document.getElementById('ai-sensor-msg');
+                track.innerHTML = '';
+                
+                const currentHour = now.getHours();
+                let pred1 = null, pred2 = null;
 
-                    if (typeof v1h === "number") el1h.style.color = (v1h < 70) ? "#ffcc00" : (v1h > 180) ? "#ff4d4d" : "#00ffaa";
-                    else el1h.style.color = "#ff4d4d";
+                for (let i = 1; i <= 4; i++) {
+                    const forecastDate = new Date();
+                    forecastDate.setHours(currentHour + i, 0, 0, 0); 
                     
-                    if (typeof v2h === "number") el2h.style.color = (v2h < 70) ? "#ffcc00" : (v2h > 180) ? "#ff4d4d" : "#00ffaa";
-                    else el2h.style.color = "#ff4d4d";
+                    const minutesForward = (forecastDate.getTime() - now.getTime()) / 60000;
+                    const val = projectValue(minutesForward, logs);
+                    if(i === 1) pred1 = val; if(i === 2) pred2 = val;
+
+                    let color = "#00ffaa";
+                    if(typeof val === 'number') {
+                        if(val < 70) color = "#ffcc00";
+                        else if(val > 180) color = "#ff4d4d";
+                    } else if(val === "Low") color = "#ffcc00";
+
+                    const item = document.createElement('div');
+                    item.className = `dial-item ${i === 1 ? 'active' : ''}`;
+                    item.innerHTML = `
+                        <div class="dial-time">${forecastDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
+                        <div class="dial-val" style="color: ${color}">${val}</div>
+                    `;
+                    track.appendChild(item);
+                }
+
+                if (pred1 && pred2) {
+                    if (pred2 === "Low" || (typeof pred2 === "number" && typeof pred1 === "number" && pred2 < pred1 - 5)) {
+                        elMsg.innerText = "Dynamic Trend: Falling"; elMsg.style.color = "#ff4d4d";
+                    } else if (typeof pred2 === "number" && typeof pred1 === "number" && pred2 > pred1 + 5) {
+                        elMsg.innerText = "Dynamic Trend: Rising"; elMsg.style.color = "#ffcc00";
+                    } else {
+                        elMsg.innerText = "Learned Habits: Steady"; elMsg.style.color = "#00ffaa";
+                    }
                 }
 
                 const last = logs.find(l => l.glucose && l.glucose !== '--');
