@@ -19,7 +19,7 @@
         
         .header-top { display: flex; flex-direction: column; align-items: center; gap: 12px; justify-content: center; }
 
-        .header-controls { display: flex; gap: 10px; justify-content: center; }
+        .header-controls { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
         h1 { 
             font-size: 2.8rem; font-weight: 900; text-transform: uppercase; letter-spacing: -2px;
@@ -36,6 +36,7 @@
         }
         .toggle-btn.active { color: #007aff; border-color: #007aff; box-shadow: 0 0 10px rgba(0, 122, 255, 0.2); }
         .toggle-btn.alert-active { color: #ffcc00; border-color: #ffcc00; box-shadow: 0 0 10px rgba(255, 204, 0, 0.2); }
+        .settings-nav-btn { color: #aaa; border-color: #333; }
 
         .age-line { font-size: 0.8rem; font-weight: 700; color: #aaa; text-transform: uppercase; letter-spacing: 2px; margin-top: 12px; cursor: pointer; }
         
@@ -49,7 +50,7 @@
             background: #000; 
             border: 2px solid #333; 
             border-radius: 40px; 
-            padding: 40px 10px 20px; 
+            padding: 45px 15px 20px; 
             text-align: center; 
             margin-bottom: 25px; 
             box-shadow: 0 10px 30px rgba(0,0,0,0.8);
@@ -63,42 +64,90 @@
         }
         .dial-container.hidden { height: 0; padding: 0; margin-bottom: 0; opacity: 0; border: none; pointer-events: none; }
 
-        .dial-indicator { display: none; }
+        .graph-wrapper {
+            position: relative;
+            width: 100%;
+            height: 120px;
+            display: flex;
+            gap: 10px;
+        }
 
+        .y-axis {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding-bottom: 30px; 
+            height: 100%;
+            border-right: 1px solid rgba(255,255,255,0.1);
+            padding-right: 8px;
+        }
+        .y-label {
+            font-size: 0.55rem;
+            color: #555;
+            font-weight: 800;
+            text-align: right;
+        }
+
+        .plot-area {
+            position: relative;
+            flex-grow: 1;
+            height: 100%;
+        }
+
+        #forecast-curve-svg {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 90px;
+            pointer-events: none;
+            z-index: 1; 
+        }
+        
         .dial-track { 
             display: flex; 
-            gap: 0; 
-            transition: transform 0.6s ease; 
-            padding: 0 5px; 
+            width: 100%;
+            height: 100%;
+            position: relative;
+            z-index: 2;
         }
-        
+
         .dial-item { 
-            min-width: 90px; 
+            flex: 1;
             text-align: center; 
-            opacity: 0.3; /* Increased base visibility for inactive items */
+            opacity: 0.3; 
             transform: scale(0.9); 
             transition: 0.4s; 
-            padding: 0 5px;
-            border-right: 1px solid rgba(255,255,255,0.15); 
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Values and Time moved to bottom */
+            gap: 2px;
         }
-        .dial-item:last-child { border-right: none; }
-        .dial-item.active { opacity: 1; transform: scale(1.05); }
+        .dial-item.active { opacity: 1; transform: scale(1.0); }
 
-        .hero-label { font-size: 0.65rem; color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; position: absolute; top: 15px; }
+        .hero-label { font-size: 0.65rem; color: #fff; font-weight: 800; text-transform: uppercase; letter-spacing: 2px; position: absolute; top: 15px; width: 100%; }
         
-        /* UPDATED: Brighter silver color for forecast times */
-        .dial-time { font-size: 0.6rem; font-weight: 800; color: #ccc; text-transform: uppercase; margin-bottom: 5px; }
+        .dial-time { 
+            font-size: 0.6rem; 
+            font-weight: 800; 
+            color: #888; 
+            text-transform: uppercase; 
+            border-top: 1px solid rgba(255,255,255,0.1);
+            padding-top: 4px;
+            margin-top: 2px;
+        }
         
-        /* UPDATED: Full white forecast values with glow */
         .dial-val { 
-            font-size: 1.8rem; 
+            font-size: 1.4rem; 
             font-weight: 900; 
             line-height: 1; 
             color: #fff; 
-            text-shadow: 0 0 15px rgba(255, 255, 255, 0.5); 
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 1), 0 0 15px rgba(0, 0, 0, 0.8), 0 0 5px rgba(0, 0, 0, 1); 
+            position: relative;
+            z-index: 3;
         }
 
-        /* UPDATED: Higher contrast for AI sensor message */
         #ai-sensor-msg { font-size: 0.7rem; color: #eee; text-transform: uppercase; font-weight: 800; margin-top: 15px; background: rgba(255,255,255,0.06); padding: 8px 15px; border-radius: 100px; display: inline-block; }
 
         #alert-container { width: 100%; max-width: 420px; display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; transition: all 0.3s ease; overflow: hidden; }
@@ -145,6 +194,7 @@
             <div class="header-controls">
                 <button id="ai-toggle-btn" class="toggle-btn" onclick="toggleAISensor()">🤖 AI</button>
                 <button id="alert-toggle-btn" class="toggle-btn" onclick="toggleAlerts()">🔔 ALERT</button>
+                <button class="toggle-btn settings-nav-btn" onclick="location.href='./prescribed_settings.html'">⚙️ ISF</button>
             </div>
             <h1 id="user-name" onclick="editName()">Pragathi Suresh</h1>
         </div>
@@ -157,8 +207,30 @@
 
         <div class="dial-container" id="sensor-hero-tile" onclick="location.href='./log.html'">
             <div class="hero-label">Pattern Forecast</div>
-            <div class="dial-indicator"></div>
-            <div class="dial-track" id="forecast-dial-track"></div>
+            
+            <div class="graph-wrapper">
+                <div class="y-axis">
+                    <div class="y-label">300</div>
+                    <div class="y-label">200</div>
+                    <div class="y-label">100</div>
+                    <div class="y-label">40</div>
+                </div>
+
+                <div class="plot-area">
+                    <svg id="forecast-curve-svg" viewBox="0 0 300 90" preserveAspectRatio="none">
+                        <path id="curve-path" d="" fill="none" stroke="url(#curve-grad)" stroke-width="3" stroke-linecap="round" />
+                        <defs>
+                            <linearGradient id="curve-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+                                <stop offset="0%" stop-color="#00ffaa" />
+                                <stop offset="50%" stop-color="#ffcc00" />
+                                <stop offset="100%" stop-color="#ff4d4d" />
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                    <div class="dial-track" id="forecast-dial-track"></div>
+                </div>
+            </div>
+
             <div id="ai-sensor-msg">Personalizing Forecast...</div>
         </div>
     </div>
@@ -239,6 +311,8 @@
         }
 
         function getDynamicISF() {
+            const prescribedISF = localStorage.getItem('prescribed_isf');
+            if (prescribedISF) return parseFloat(prescribedISF);
             const hour = new Date().getHours();
             if (hour >= 4 && hour < 10) return 30;
             if (hour >= 18 || hour < 4) return 50;
@@ -321,7 +395,12 @@
             });
 
             let totalFoodImpact = 0;
-            const recentMeal = logs.find(l => l.notes && (targetTime - new Date(l.timestamp).getTime()) < (3 * 3600000));
+            const recentMeal = logs.find(l => {
+                const logTime = new Date(l.timestamp).getTime();
+                const diff = targetTime - logTime;
+                return (parseFloat(l.carb) > 0) && diff < (3 * 3600000);
+            });
+            
             if (recentMeal) {
                 const mealTime = new Date(recentMeal.timestamp).getTime();
                 const hoursSinceMeal = (targetTime - mealTime) / (60 * 60 * 1000);
@@ -413,7 +492,7 @@
                 track.innerHTML = '';
                 
                 const currentHour = now.getHours();
-                let pred1 = null, pred2 = null;
+                const predictionValues = [];
 
                 for (let i = 1; i <= 4; i++) {
                     const forecastDate = new Date();
@@ -421,7 +500,7 @@
                     
                     const minutesForward = (forecastDate.getTime() - now.getTime()) / 60000;
                     const val = projectValue(minutesForward, logs);
-                    if(i === 1) pred1 = val; if(i === 2) pred2 = val;
+                    predictionValues.push(val);
 
                     let color = "#00ffaa";
                     if(typeof val === 'number') {
@@ -432,12 +511,27 @@
                     const item = document.createElement('div');
                     item.className = `dial-item ${i === 1 ? 'active' : ''}`;
                     item.innerHTML = `
-                        <div class="dial-time">${forecastDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
                         <div class="dial-val" style="color: ${color}">${val}</div>
+                        <div class="dial-time">${forecastDate.toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'})}</div>
                     `;
                     track.appendChild(item);
                 }
 
+                const path = document.getElementById('curve-path');
+                let d = "";
+                const width = track.offsetWidth;
+                const segmentWidth = width / 4;
+
+                predictionValues.forEach((val, idx) => {
+                    const numericVal = (val === "Low" || isNaN(val)) ? 40 : val;
+                    const x = (segmentWidth / 2) + (idx * segmentWidth);
+                    const y = Math.max(5, Math.min(85, 90 - ((numericVal - 40) / 260) * 85));
+                    d += (idx === 0 ? "M" : " L") + x + " " + y;
+                });
+                path.setAttribute("d", d);
+
+                const pred1 = predictionValues[0];
+                const pred2 = predictionValues[1];
                 if (pred1 && pred2) {
                     if (pred2 === "Low" || (typeof pred2 === "number" && typeof pred1 === "number" && pred2 < pred1 - 5)) {
                         elMsg.innerText = "Trend: Falling"; elMsg.style.color = "#ff4d4d";
