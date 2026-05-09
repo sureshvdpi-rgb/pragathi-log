@@ -121,7 +121,7 @@
             position: relative;
             display: flex;
             flex-direction: column;
-            justify-content: flex-end; /* Values and Time moved to bottom */
+            justify-content: flex-end;
             gap: 2px;
         }
         .dial-item.active { opacity: 1; transform: scale(1.0); }
@@ -181,10 +181,9 @@
         .supply-val { color: #00ffaa; }
         .stats-val { color: #007aff; }
 
-        .data-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 420px; }
+        .data-controls { display: grid; grid-template-columns: 1fr; width: 100%; max-width: 420px; }
         .control-btn { background: #1a1a1a; border: 1px solid #333; color: #eee; padding: 18px; border-radius: 24px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; cursor: pointer; }
-        .btn-report { grid-column: span 2; background: #007aff; color: #fff; border: none; }
-        .btn-danger { grid-column: span 2; color: #ff4d4d; border-color: rgba(255, 77, 77, 0.2); }
+        .btn-report { background: #007aff; color: #fff; border: none; }
     </style>
 </head>
 <body>
@@ -195,6 +194,7 @@
                 <button id="ai-toggle-btn" class="toggle-btn" onclick="toggleAISensor()">🤖 AI</button>
                 <button id="alert-toggle-btn" class="toggle-btn" onclick="toggleAlerts()">🔔 ALERT</button>
                 <button class="toggle-btn settings-nav-btn" onclick="location.href='./prescribed_settings.html'">⚙️ ISF</button>
+                <button class="toggle-btn settings-nav-btn" onclick="location.href='./data.html'">📊 Data</button>
             </div>
             <h1 id="user-name" onclick="editName()">Pragathi Suresh</h1>
         </div>
@@ -270,10 +270,6 @@
 
     <div class="data-controls">
         <button class="control-btn btn-report" onclick="location.href='./report.html'">Generate Printable Report</button>
-        <button class="control-btn" onclick="exportData()">Export Data</button>
-        <button class="control-btn" onclick="document.getElementById('fileImport').click()">Import Data</button>
-        <button class="control-btn btn-danger" onclick="clearAllData()">Clear All Data</button>
-        <input type="file" id="fileImport" style="display:none" accept=".json" onchange="importData(event)">
     </div>
 
     <script>
@@ -439,9 +435,13 @@
                 }
             }
 
+            // DYNAMIC BACKUP ALERT LOGIC
             const lastBackup = localStorage.getItem('last_backup_date');
-            if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > (7 * 24 * 60 * 60 * 1000)) {
-                addAlert("Security Alert", "Data backup due (7 Days)", "💾", "theme-blue", "javascript:exportData()");
+            const freqDays = parseInt(localStorage.getItem('backup_freq_days') || 7);
+            const freqMillis = freqDays * 24 * 60 * 60 * 1000;
+
+            if (!lastBackup || (now.getTime() - parseInt(lastBackup)) > freqMillis) {
+                addAlert("Security Alert", `Data backup due (${freqDays} Days)`, "💾", "theme-blue", "./data.html");
             }
 
             ['rn', 'bn', 'lc', 'rc', 'bc'].forEach(k => {
@@ -597,23 +597,6 @@
             }
         }
 
-        function exportData() {
-            const data = {}; Object.keys(localStorage).forEach(k => data[k] = localStorage.getItem(k));
-            const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([JSON.stringify(data)], {type:'application/json'})); a.download = `Backup_${new Date().toISOString().split('T')[0]}.json`; a.click();
-            localStorage.setItem('last_backup_date', Date.now().toString());
-            refreshAlerts();
-        }
-
-        function importData(event) {
-            const reader = new FileReader();
-            reader.onload = e => {
-                const data = JSON.parse(e.target.result); localStorage.clear();
-                Object.keys(data).forEach(k => localStorage.setItem(k, data[k])); location.reload();
-            };
-            reader.readAsText(event.target.files[0]);
-        }
-
-        function clearAllData() { if (confirm("Clear ALL?")) { localStorage.clear(); location.reload(); } }
         function editName() { let n = prompt("Name:", localStorage.getItem('profile_name')); if(n) { localStorage.setItem('profile_name', n); render(); } }
         function triggerAgePicker() { document.getElementById('birthdate-picker').showPicker(); }
         function updateAge(date) { localStorage.setItem('profile_dob', date); render(); }

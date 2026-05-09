@@ -229,30 +229,26 @@
                 .filter(l => l.timestamp.startsWith(selectedDateStr) && l.id != editId && l.category !== 'General' && l.category !== 'Daily Basal')
                 .map(l => l.category);
 
-            let firstAvailable = "General";
-            let foundFirst = false;
-
             Array.from(categorySelect.options).forEach(option => {
                 if (option.value === "General") return;
-                
-                const isUsed = usedCategories.includes(option.value);
-                option.disabled = isUsed;
-                
-                if (!editId && !foundFirst && !isUsed && categoryOrder.includes(option.value)) {
-                    firstAvailable = option.value;
-                    foundFirst = true;
-                }
+                option.disabled = usedCategories.includes(option.value);
             });
 
             if (!editId) {
                 const currentCat = categorySelect.value;
-                if (currentCat.includes("Breakfast")) {
-                    insulinInput.value = localStorage.getItem('prescribed_breakfast') || '';
-                } else if (currentCat.includes("Lunch")) {
-                    insulinInput.value = localStorage.getItem('prescribed_lunch') || '';
-                } else if (currentCat.includes("Dinner")) {
-                    insulinInput.value = localStorage.getItem('prescribed_dinner') || '';
+                // CORRECTED LOGIC: Check if it's a "Before" category before filling
+                if (currentCat.startsWith("Before")) {
+                    if (currentCat.includes("Breakfast")) {
+                        insulinInput.value = localStorage.getItem('prescribed_breakfast') || '';
+                    } else if (currentCat.includes("Lunch")) {
+                        insulinInput.value = localStorage.getItem('prescribed_lunch') || '';
+                    } else if (currentCat.includes("Dinner")) {
+                        insulinInput.value = localStorage.getItem('prescribed_dinner') || '';
+                    } else {
+                        insulinInput.value = '';
+                    }
                 } else {
+                    // Reset to empty for "After", "General", "Early Morning", etc.
                     insulinInput.value = '';
                 }
             }
@@ -264,7 +260,7 @@
             document.getElementById('edit-id').value = "";
             document.getElementById('log-glucose').value = "";
             document.getElementById('log-insulin').value = "";
-            document.getElementById('log-carb').value = ""; // RESET CARB
+            document.getElementById('log-carb').value = ""; 
             document.getElementById('log-notes').value = "";
             document.getElementById('log-source').value = "Glucometer";
             document.getElementById('cancel-edit-btn').style.display = "none";
@@ -309,7 +305,7 @@
                 timestamp: document.getElementById('log-datetime').value,
                 glucose: glucoseVal || '--',
                 insulin: document.getElementById('log-insulin').value || '0',
-                carb: document.getElementById('log-carb').value || '0', // SAVE CARB
+                carb: document.getElementById('log-carb').value || '0', 
                 category: document.getElementById('log-category').value,
                 source: sourceVal,
                 notes: document.getElementById('log-notes').value || ''
@@ -463,7 +459,7 @@
             document.getElementById('log-datetime').value = entry.timestamp;
             document.getElementById('log-glucose').value = entry.glucose === '--' ? '' : entry.glucose;
             document.getElementById('log-insulin').value = entry.insulin;
-            document.getElementById('log-carb').value = entry.carb || '0'; // LOAD CARB FOR EDIT
+            document.getElementById('log-carb').value = entry.carb || '0'; 
             document.getElementById('log-category').value = entry.category;
             document.getElementById('log-source').value = entry.source || 'Glucometer';
             document.getElementById('log-notes').value = entry.notes || '';
