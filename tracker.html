@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business & Personal Cash Flow Tracker</title>
+    <!-- Tailwind CSS via CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .tab-transition { transition: all 0.2s ease-in-out; }
+        .editable-title:hover { background-color: rgba(255,255,255,0.15); border-radius: 4px; cursor: pointer; }
+        .editable-title:focus { background-color: rgba(255,255,255,0.25); border-radius: 4px; outline: none; padding-left: 4px; padding-right: 4px; }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.95); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fade-in { animation: fadeIn 0.2s ease-out forwards; }
+    </style>
+</head>
+<body class="bg-gray-50 font-sans min-h-screen text-gray-800 flex flex-col items-center">
+
+    <div class="w-full max-w-md bg-white min-h-screen shadow-lg flex flex-col">
+        
+        <!-- HEADER 1: GRAND HEADLINE CASH ONLY (Frozen at very top) -->
+        <div class="sticky top-0 z-40 bg-slate-900 text-white p-5 shadow-md rounded-b-xl">
+            <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">Total Available Cash</span>
+            <span class="text-3xl font-black text-emerald-400" id="total-liquidity-display">₹0.00</span>
+        </div>
+
+        <!-- SCROLLABLE CONTENT BODY -->
+        <main class="p-4 space-y-5 flex-grow overflow-y-auto">
+
+            <!-- HEADER 2: SEPARATED ASSET WALLETS TILE (Scrolls with page layout) -->
+            <div class="bg-slate-800 text-white p-4 rounded-2xl shadow-md space-y-3">
+                <span class="text-xs text-slate-400 font-bold uppercase tracking-wider block">Accounts Liquidity Breakdown</span>
+                
+                <div class="grid grid-cols-2 gap-3 text-sm">
+                    <!-- Physical Cash Block -->
+                    <div class="bg-slate-700/40 p-2 rounded-xl border border-slate-600/30">
+                        <div class="flex items-center gap-1 text-xs text-slate-400 mb-1 font-medium">
+                            <span>💵</span>
+                            <span id="title-cash" contenteditable="true" onblur="updateAccountName('cash', this.innerText)" class="editable-title font-bold px-1 min-w-[50px]">Physical Cash</span>
+                        </div>
+                        <div class="flex items-center text-base font-bold text-white px-1">
+                            <span>₹</span>
+                            <input type="number" step="any" id="bal-cash" class="w-full bg-transparent font-bold text-white focus:outline-none ml-0.5" onchange="adjustDirectBalance('cash', this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Bank 1 Block -->
+                    <div class="bg-slate-700/40 p-2 rounded-xl border border-slate-600/30">
+                        <div class="flex items-center gap-1 text-xs text-slate-400 mb-1 font-medium">
+                            <span>🏦</span>
+                            <span id="title-bank1" contenteditable="true" onblur="updateAccountName('bank1', this.innerText)" class="editable-title font-bold px-1 min-w-[50px]">Bank Account 1</span>
+                        </div>
+                        <div class="flex items-center text-base font-bold text-white px-1">
+                            <span>₹</span>
+                            <input type="number" step="any" id="bal-bank1" class="w-full bg-transparent font-bold text-white focus:outline-none ml-0.5" onchange="adjustDirectBalance('bank1', this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Bank 2 Block -->
+                    <div class="bg-slate-700/40 p-2 rounded-xl border border-slate-600/30">
+                        <div class="flex items-center gap-1 text-xs text-slate-400 mb-1 font-medium">
+                            <span>🏦</span>
+                            <span id="title-bank2" contenteditable="true" onblur="updateAccountName('bank2', this.innerText)" class="editable-title font-bold px-1 min-w-[50px]">Bank Account 2</span>
+                        </div>
+                        <div class="flex items-center text-base font-bold text-white px-1">
+                            <span>₹</span>
+                            <input type="number" step="any" id="bal-bank2" class="w-full bg-transparent font-bold text-white focus:outline-none ml-0.5" onchange="adjustDirectBalance('bank2', this.value)">
+                        </div>
+                    </div>
+
+                    <!-- Bank 3 Block -->
+                    <div class="bg-slate-700/40 p-2 rounded-xl border border-slate-600/30">
+                        <div class="flex items-center gap-1 text-xs text-slate-400 mb-1 font-medium">
+                            <span>🏦</span>
+                            <span id="title-bank3" contenteditable="true" onblur="updateAccountName('bank3', this.innerText)" class="editable-title font-bold px-1 min-w-[50px]">Bank Account 3</span>
+                        </div>
+                        <div class="flex items-center text-base font-bold text-white px-1">
+                            <span>₹</span>
+                            <input type="number" step="any" id="bal-bank3" class="w-full bg-transparent font-bold text-white focus:outline-none ml-0.5" onchange="adjustDirectBalance('bank3', this.value)">
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[9px] text-slate-400 text-center italic">Tip: Tap names or figures to override balances directly.</p>
+            </div>
+
+            <!-- Transaction Input Form Card -->
+            <div class="bg-white p-4 border border-gray-100 rounded-xl shadow-sm space-y-3">
+                <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide border-b pb-2">Log Income or Expense</h3>
+                <form onsubmit="handleFormSubmission(event)" class="space-y-3">
+                    
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">Accounting Type</label>
+                            <select id="form-type" onchange="updateCategoryOptions()" class="w-full p-2 text-sm border rounded-lg bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="personal">Personal</option>
+                                <option value="business">Business</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">Payment Source</label>
+                            <select id="form-source" class="w-full p-2 text-sm border rounded-lg bg-gray-50 font-medium text-indigo-700 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="cash" id="opt-cash">Physical Cash</option>
+                                <option value="bank1" id="opt-bank1">Bank Account 1</option>
+                                <option value="bank2" id="opt-bank2">Bank Account 2</option>
+                                <option value="bank3" id="opt-bank3">Bank Account 3</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">Flow Direction</label>
+                            <select id="form-flow" onchange="updateCategoryOptions()" class="w-full p-2 text-sm border rounded-lg bg-gray-50 font-bold focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <option value="expense" class="text-rose-600">(-) Expense / Outflow</option>
+                                <option value="income" class="text-emerald-600">(+) Income / Inflow</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="text-xs text-gray-500 block mb-1">Category</label>
+                            <select id="form-category" class="w-full p-2 text-sm border rounded-lg bg-gray-50 focus:ring-2 focus:ring-indigo-500 outline-none">
+                                <!-- Generated Dynamically -->
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Description</label>
+                        <input type="text" id="form-desc" required class="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Details...">
+                    </div>
+                    <div>
+                        <label class="text-xs text-gray-500 block mb-1">Amount (₹)</label>
+                        <input type="number" step="any" id="form-amount" required class="w-full p-2 text-sm border rounded-lg focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="0.00">
+                    </div>
+
+                    <button type="submit" class="w-full py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-medium text-sm rounded-lg shadow-sm transition-colors">Submit Transaction</button>
+                </form>
+            </div>
+
+            <!-- DATA SAFETY & STORAGE UTILITIES CARD -->
+            <div class="bg-white p-4 border border-gray-100 rounded-xl shadow-sm space-y-3">
+                <div class="flex justify-between items-center border-b pb-2">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Data Safety & Storage</h3>
+                    <span class="text-[10px] bg-slate-100 text-slate-600 font-bold px-2 py-0.5 rounded-full" id="storage-size-display">0.00 KB Used</span>
+                </div>
+                
+                <!-- JSON Backups Actions -->
+                <div class="grid grid-cols-2 gap-2">
+                    <button onclick="exportToJSON()" class="py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg border border-indigo-100 transition-colors flex items-center justify-center gap-1.5">
+                        <span>📤 Export JSON</span>
+                    </button>
+                    <label class="py-2.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 font-semibold text-xs rounded-lg border border-indigo-100 transition-colors flex items-center justify-center gap-1.5 cursor-pointer text-center">
+                        <span>📥 Import JSON</span>
+                        <input type="file" id="json-import-file" accept=".json" onchange="importFromJSON(event)" class="hidden">
+                    </label>
+                </div>
+
+                <!-- Selective Range Date Purge Utility -->
+                <div class="bg-rose-50/50 p-3 rounded-xl border border-rose-100 space-y-2.5">
+                    <div class="flex items-center gap-1">
+                        <span class="text-rose-600 text-xs">🗑</span>
+                        <span class="text-xs font-bold text-rose-800 uppercase tracking-wide block">Selective Data Purge</span>
+                    </div>
+                    <div class="grid grid-cols-2 gap-2">
+                        <div>
+                            <label class="text-[10px] text-rose-700 font-bold block mb-1">From Date</label>
+                            <input type="date" id="purge-start" class="w-full p-1.5 text-xs border border-rose-200 rounded-lg focus:ring-1 focus:ring-rose-500 bg-white outline-none">
+                        </div>
+                        <div>
+                            <label class="text-[10px] text-rose-700 font-bold block mb-1">To Date</label>
+                            <input type="date" id="purge-end" class="w-full p-1.5 text-xs border border-rose-200 rounded-lg focus:ring-1 focus:ring-rose-500 bg-white outline-none">
+                        </div>
+                    </div>
+                    <button type="button" onclick="showPurgeConfirmation()" class="w-full py-2 bg-rose-600 hover:bg-rose-700 text-white font-medium text-xs rounded-lg transition-colors shadow-sm">
+                        Purge Selected Period
+                    </button>
+                </div>
+            </div>
+
+            <!-- Ledger View History Container -->
+            <div class="space-y-3 pb-8">
+                <div class="flex justify-between items-center px-1">
+                    <h3 class="text-sm font-bold text-gray-700 uppercase tracking-wide">Ledger Records</h3>
+                    <button onclick="exportToCSV()" class="text-xs text-indigo-600 hover:underline font-medium">Export CSV</button>
+                </div>
+
+                <!-- Filters directly on top of transaction ledger cards -->
+                <div class="bg-gray-100 p-1 rounded-xl flex gap-1 shadow-inner">
+                    <button id="view-all-btn" onclick="switchView('all')" class="tab-transition flex-1 py-1.5 text-center text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-sm">All Logs</button>
+                    <button id="view-business-btn" onclick="switchView('business')" class="tab-transition flex-1 py-1.5 text-center text-xs font-semibold text-gray-600 hover:text-gray-900">Business</button>
+                    <button id="view-personal-btn" onclick="switchView('personal')" class="tab-transition flex-1 py-1.5 text-center text-xs font-semibold text-gray-600 hover:text-gray-900">Personal</button>
+                </div>
+
+                <div id="ledger-container" class="space-y-2 pt-1">
+                    <!-- Insertion node -->
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- CUSTOM GLOBAL CONFIRMATION DIALOG MODAL Overlay -->
+    <div id="custom-dialog" class="fixed inset-0 bg-slate-900/60 z-50 flex items-center justify-center p-4 hidden">
+        <div class="bg-white w-full max-w-sm rounded-2xl shadow-xl overflow-hidden animate-fade-in p-5 space-y-4">
+            <div class="flex items-center gap-2 text-amber-600 border-b pb-2">
+                <span class="text-xl" id="dialog-icon">⚠</span>
+                <h4 class="text-sm font-black uppercase tracking-wider text-slate-800" id="dialog-title">Confirm Action</h4>
+            </div>
+            <p class="text-xs text-slate-600 leading-relaxed" id="dialog-body">Are you sure you want to proceed?</p>
+            <div class="flex gap-2 justify-end pt-2">
+                <button id="dialog-cancel-btn" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold text-xs rounded-lg transition-colors">Cancel</button>
+                <button id="dialog-confirm-btn" class="px-4 py-2 font-semibold text-xs rounded-lg transition-colors">Confirm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- CUSTOM TOAST BANNER -->
+    <div id="custom-toast" class="fixed bottom-4 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-xs font-semibold px-4 py-3 rounded-xl shadow-xl z-50 tab-transition opacity-0 pointer-events-none flex items-center gap-2 max-w-[90%]">
+        <span id="toast-icon">✓</span>
+        <span id="toast-text">Success! Data has been updated.</span>
+    </div>
+
+    <script>
+        let appState = {
+            currentView: 'all',
+            accountNames: {
+                cash: "Physical Cash",
+                bank1: "Bank Account 1",
+                bank2: "Bank Account 2",
+                bank3: "Bank Account 3"
+            },
+            balances: {
+                cash: 5000,
+                bank1: 20000,
+                bank2: 10000,
+                bank3: 5000
+            },
+            expenses: []
+        };
+
+        const categoryMap = {
+            personal: {
+                income: ["Salary", "Loan", "Gift", "Others"],
+                expense: ["Grocery", "Medical", "Education", "Entertainment", "Travel", "Events", "Loan", "Others"]
+            },
+            business: {
+                income: ["Main Cash", "Others"],
+                expense: ["Stock", "Rent", "Maintenance", "Loan", "Others"]
+            }
+        };
+
+        let pendingImportData = null;
+        let toastTimeout = null;
+
+        window.addEventListener('DOMContentLoaded', () => {
+            loadState();
+            refreshUIElements();
+            updateCategoryOptions();
+            renderLedger();
+        });
+
+        function updateCategoryOptions() {
+            const type = document.getElementById('form-type').value;
+            const flow = document.getElementById('form-flow').value;
+            const categorySelect = document.getElementById('form-category');
+            
+            categorySelect.innerHTML = '';
+            const options = categoryMap[type][flow];
+            
+            options.forEach(cat => {
+                const opt = document.createElement('option');
+                opt.value = cat;
+                opt.innerText = cat;
+                categorySelect.appendChild(opt);
+            });
+        }
+
+        function updateAccountName(accountKey, text) {
+            const cleanText = text.trim() || appState.accountNames[accountKey];
+            appState.accountNames[accountKey] = cleanText;
+            document.getElementById(`title-${accountKey}`).innerText = cleanText;
+            saveState();
+            refreshUIElements();
+            renderLedger();
+        }
+
+        function adjustDirectBalance(accountKey, val) {
+            const parsed = parseFloat(val);
+            appState.balances[accountKey] = isNaN(parsed) ? 0 : parsed;
+            saveState();
+            refreshUIElements();
+        }
+
+        function handleFormSubmission(e) {
+            e.preventDefault();
+            const amt = document.getElementById('form-amount');
+            const desc = document.getElementById('form-desc');
+            const type = document.getElementById('form-type');
+            const source = document.getElementById('form-source');
+            const cat = document.getElementById('form-category');
+            const flow = document.getElementById('form-flow');
+
+            const val = parseFloat(amt.value);
+            const activeSource = source.value;
+
+            if (flow.value === 'expense') {
+                appState.balances[activeSource] -= val;
+            } else {
+                appState.balances[activeSource] += val;
+            }
+
+            const record = {
+                id: Date.now(),
+                amount: val,
+                flow: flow.value,
+                description: desc.value.trim(),
+                type: type.value,
+                source: activeSource,
+                category: cat.value,
+                date: new Date().toISOString().split('T')[0]
+            };
+
+            appState.expenses.unshift(record);
+            saveState();
+            
+            desc.value = '';
+            amt.value = '';
+
+            refreshUIElements();
+            renderLedger();
+            showToast("Transaction successfully added!", "✓");
+        }
+
+        function removeRecord(id) {
+            const item = appState.expenses.find(r => r.id === id);
+            if (item) {
+                if (item.flow === 'expense') {
+                    appState.balances[item.source] += item.amount;
+                } else {
+                    appState.balances[item.source] -= item.amount;
+                }
+                appState.expenses = appState.expenses.filter(r => r.id !== id);
+                saveState();
+                refreshUIElements();
+                renderLedger();
+                showToast("Record deleted. Balance adjusted.", "✓");
+            }
+        }
+
+        function switchView(view) {
+            appState.currentView = view;
+            const btns = { all: 'view-all-btn', business: 'view-business-btn', personal: 'view-personal-btn' };
+            Object.keys(btns).forEach(k => {
+                document.getElementById(btns[k]).className = (k === view)
+                    ? "tab-transition flex-1 py-1.5 text-center text-xs font-semibold rounded-lg bg-white text-indigo-600 shadow-sm"
+                    : "tab-transition flex-1 py-1.5 text-center text-xs font-semibold text-gray-600 hover:text-gray-900";
+            });
+            renderLedger();
+        }
+
+        function refreshUIElements() {
+            Object.keys(appState.balances).forEach(k => {
+                document.getElementById(`title-${k}`).innerText = appState.accountNames[k];
+                document.getElementById(`bal-${k}`).value = appState.balances[k].toFixed(2);
+                
+                const optionsMap = { cash: 'opt-cash', bank1: 'opt-bank1', bank2: 'opt-bank2', bank3: 'opt-bank3' };
+                const iconMap = { cash: '💵 ', bank1: '🏦 ', bank2: '🏦 ', bank3: '🏦 ' };
+                document.getElementById(optionsMap[k]).innerText = iconMap[k] + appState.accountNames[k];
+            });
+
+            const total = appState.balances.cash + appState.balances.bank1 + appState.balances.bank2 + appState.balances.bank3;
+            document.getElementById('total-liquidity-display').innerText = `₹${total.toLocaleString('en-IN', {minimumFractionDigits:2, maximumFractionDigits:2})}`;
+            updateStorageSizeDisplay();
+        }
+
+        function renderLedger() {
+            const container = document.getElementById('ledger-container');
+            container.innerHTML = '';
+
+            const filtered = appState.expenses.filter(r => {
+                if (appState.currentView === 'all') return true;
+                return r.type === appState.currentView;
+            });
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p class="text-center text-sm text-gray-400 py-6">No matching logs tracked.</p>`;
+                return;
+            }
+
+            filtered.forEach(r => {
+                const profileTheme = r.type === 'business' ? 'bg-purple-100 text-purple-700 border-purple-200' : 'bg-amber-100 text-amber-700 border-amber-200';
+                const sign = r.flow === 'income' ? '+' : '-';
+                const flowTheme = r.flow === 'income' ? 'text-emerald-600' : 'text-gray-900';
+                const customName = appState.accountNames[r.source] || r.source;
+
+                const card = document.createElement('div');
+                card.className = "flex justify-between items-center bg-white p-3 border border-gray-100 rounded-xl shadow-sm";
+                card.innerHTML = `
+                    <div class="space-y-0.5">
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                            <span class="text-[10px] uppercase font-bold tracking-wider px-1 border rounded ${profileTheme}">${r.type}</span>
+                            <span class="text-xs text-gray-400 font-medium">${r.category}</span>
+                            <span class="text-[11px] font-semibold text-indigo-600 bg-indigo-50 px-1 rounded">${customName}</span>
+                        </div>
+                        <p class="text-sm font-semibold text-gray-800">${r.description}</p>
+                    </div>
+                    <div class="flex items-center gap-2">
+                        <span class="text-sm font-bold ${flowTheme}">${sign}₹${r.amount.toFixed(2)}</span>
+                        <button onclick="removeRecord(${r.id})" class="text-gray-300 hover:text-rose-500 p-1 transition-colors">
+                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                            </svg>
+                        </button>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        function updateStorageSizeDisplay() {
+            const raw = localStorage.getItem('wallet_tracker_state_v3');
+            if (!raw) {
+                document.getElementById('storage-size-display').innerText = "0.00 KB Used";
+                return;
+            }
+            const bytes = new Blob([raw]).size;
+            const kb = (bytes / 1024).toFixed(2);
+            document.getElementById('storage-size-display').innerText = `${kb} KB Used`;
+        }
+
+        // JSON Export
+        function exportToJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appState, null, 2));
+            const downloadAnchor = document.createElement('a');
+            downloadAnchor.setAttribute("href", dataStr);
+            downloadAnchor.setAttribute("download", `cashflow_backup_${new Date().toISOString().split('T')[0]}.json`);
+            document.body.appendChild(downloadAnchor);
+            downloadAnchor.click();
+            downloadAnchor.remove();
+            showToast("JSON Backup downloaded successfully!", "📤");
+        }
+
+        // JSON Import
+        function importFromJSON(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const parsed = JSON.parse(e.target.result);
+                    // Standard structural verification checks
+                    if (parsed && typeof parsed === 'object' && (parsed.balances || parsed.expenses)) {
+                        pendingImportData = parsed;
+                        showCustomDialog({
+                            title: "Import JSON Backup?",
+                            body: "This will completely replace all your current balances, custom account names, and ledger records with the imported backup data. This action cannot be undone.",
+                            confirmText: "Overwrite Current",
+                            confirmClass: "bg-rose-600 hover:bg-rose-700 text-white",
+                            onConfirm: () => {
+                                appState = {
+                                    currentView: pendingImportData.currentView || 'all',
+                                    accountNames: pendingImportData.accountNames || { cash: "Physical Cash", bank1: "Bank Account 1", bank2: "Bank Account 2", bank3: "Bank Account 3" },
+                                    balances: pendingImportData.balances || { cash: 0, bank1: 0, bank2: 0, bank3: 0 },
+                                    expenses: pendingImportData.expenses || []
+                                };
+                                saveState();
+                                refreshUIElements();
+                                updateCategoryOptions();
+                                renderLedger();
+                                showToast("Data restored successfully!", "✓");
+                                pendingImportData = null;
+                            },
+                            onCancel: () => {
+                                pendingImportData = null;
+                            }
+                        });
+                    } else {
+                        showToast("Invalid JSON Backup format.", "✗");
+                    }
+                } catch(err) {
+                    showToast("Error processing file format.", "✗");
+                }
+                event.target.value = ''; // Reset input target
+            };
+            reader.readAsText(file);
+        }
+
+        function showPurgeConfirmation() {
+            const startDateStr = document.getElementById('purge-start').value;
+            const endDateStr = document.getElementById('purge-end').value;
+
+            if (!startDateStr || !endDateStr) {
+                showToast("Please enter both Start and End Dates.", "⚠");
+                return;
+            }
+
+            const start = new Date(startDateStr);
+            const end = new Date(endDateStr);
+
+            if (start > end) {
+                showToast("Start date cannot be after End date.", "⚠");
+                return;
+            }
+
+            start.setHours(0,0,0,0);
+            end.setHours(23,59,59,999);
+
+            showCustomDialog({
+                title: "Confirm Selective Purge",
+                body: `Are you sure you want to delete all transaction entries logged between ${startDateStr} and ${endDateStr}? This will automatically reverse their amounts back to your accounts.`,
+                confirmText: "Purge & Recalculate",
+                confirmClass: "bg-rose-600 hover:bg-rose-700 text-white",
+                onConfirm: () => {
+                    executePurge(start, end);
+                }
+            });
+        }
+
+        function executePurge(startDateObj, endDateObj) {
+            const toPurge = appState.expenses.filter(r => {
+                const recordDate = new Date(r.date);
+                recordDate.setHours(12,0,0,0);
+                return recordDate >= startDateObj && recordDate <= endDateObj;
+            });
+
+            if (toPurge.length === 0) {
+                showToast("No records found in this date range.", "ℹ");
+                return;
+            }
+
+            // Reverse transaction accounting impacts from account balances safely
+            toPurge.forEach(item => {
+                if (item.flow === 'expense') {
+                    appState.balances[item.source] += item.amount;
+                } else {
+                    appState.balances[item.source] -= item.amount;
+                }
+            });
+
+            // Re-assign ledger elements without the deleted range
+            appState.expenses = appState.expenses.filter(r => {
+                const recordDate = new Date(r.date);
+                recordDate.setHours(12,0,0,0);
+                return !(recordDate >= startDateObj && recordDate <= endDateObj);
+            });
+
+            saveState();
+            refreshUIElements();
+            renderLedger();
+
+            // Clear purge selectors
+            document.getElementById('purge-start').value = '';
+            document.getElementById('purge-end').value = '';
+
+            showToast(`Purged ${toPurge.length} record(s). Balances adjusted.`, "✓");
+        }
+
+        function showCustomDialog({ title, body, confirmText, confirmClass, onConfirm, onCancel }) {
+            const dialog = document.getElementById('custom-dialog');
+            document.getElementById('dialog-title').innerText = title;
+            document.getElementById('dialog-body').innerText = body;
+            
+            const confirmBtn = document.getElementById('dialog-confirm-btn');
+            const cancelBtn = document.getElementById('dialog-cancel-btn');
+            
+            confirmBtn.innerText = confirmText || "Confirm";
+            confirmBtn.className = `px-4 py-2 font-bold text-xs rounded-lg transition-colors ${confirmClass || 'bg-rose-600 hover:bg-rose-700 text-white'}`;
+            
+            const newConfirmBtn = confirmBtn.cloneNode(true);
+            const newCancelBtn = cancelBtn.cloneNode(true);
+            confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+            cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+            newConfirmBtn.addEventListener('click', () => {
+                dialog.classList.add('hidden');
+                if (typeof onConfirm === 'function') onConfirm();
+            });
+            
+            newCancelBtn.addEventListener('click', () => {
+                dialog.classList.add('hidden');
+                if (typeof onCancel === 'function') onCancel();
+            });
+
+            dialog.classList.remove('hidden');
+        }
+
+        function showToast(message, icon = "✓") {
+            const toast = document.getElementById('custom-toast');
+            document.getElementById('toast-icon').innerText = icon;
+            document.getElementById('toast-text').innerText = message;
+            
+            toast.style.opacity = "1";
+            toast.style.pointerEvents = "auto";
+            
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => {
+                toast.style.opacity = "0";
+                toast.style.pointerEvents = "none";
+            }, 3000);
+        }
+
+        function saveState() {
+            localStorage.setItem('wallet_tracker_state_v3', JSON.stringify(appState));
+        }
+
+        function loadState() {
+            const raw = localStorage.getItem('wallet_tracker_state_v3');
+            if (raw) {
+                try { 
+                    appState = JSON.parse(raw); 
+                    if(!appState.accountNames) {
+                        appState.accountNames = { cash: "Physical Cash", bank1: "Bank Account 1", bank2: "Bank Account 2", bank3: "Bank Account 3" };
+                    }
+                } catch(e) { console.error(e); }
+            }
+        }
+
+        function exportToCSV() {
+            if (appState.expenses.length === 0) {
+                alert("Nothing to export yet!");
+                return;
+            }
+            let csv = "data:text/csv;charset=utf-8,ID,Date,AccountingType,FlowDirection,SourceAccountCustomName,Category,Description,Amount\n";
+            appState.expenses.forEach(r => {
+                const namedSource = appState.accountNames[r.source] || r.source;
+                csv += `${r.id},${r.date},${r.type},${r.flow},"${namedSource.replace(/"/g, '""')}",${r.category},"${r.description.replace(/"/g, '""')}",${r.amount}\n`;
+            });
+            const link = document.createElement("a");
+            link.setAttribute("href", encodeURI(csv));
+            link.setAttribute("download", `wallet_cashflow_${new Date().toISOString().split('T')[0]}.csv`);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+    </script>
+</body>
+</html>
